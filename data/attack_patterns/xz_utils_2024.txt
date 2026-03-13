@@ -1,0 +1,92 @@
+ATTACK PATTERN: XZ Utils Supply Chain Compromise (2024)
+========================================================
+Source: CVE-2024-3094 | Discovered: March 2024 | Severity: CRITICAL
+
+SUMMARY
+-------
+A sophisticated, multi-year nation-state attack against the XZ Utils open-source
+compression library (versions 5.6.0 and 5.6.1). The attacker operated under the
+alias "Jia Tan" (jia-tan / JiaT75), patiently infiltrating the project over ~2.5
+years before inserting a backdoor into the build system that would have granted
+remote code execution on any Linux system running a vulnerable version of OpenSSH
+linked against the compromised liblzma.
+
+
+ATTACK TIMELINE & BEHAVIORAL INDICATORS
+-----------------------------------------
+1. SLOW TRUST BUILDING (2021-2023)
+   - New maintainer account created with no prior open-source history.
+   - First contributions were legitimate bug fixes and minor improvements.
+   - Gradual escalation of commit frequency and scope of changes.
+   - Social engineering of existing maintainers to hand over commit access.
+   - Account age at time of backdoor insertion: approximately 800 days — but
+     the pattern of low activity → high activity → privilege escalation is
+     the key signal, not the raw age alone.
+
+2. SOCIAL ENGINEERING SIGNALS
+   - Coordinated pressure from sock-puppet accounts urging faster merges.
+   - Complaints from fake accounts that "the project is moving too slowly".
+   - Exploitation of maintainer burnout to accelerate trust transfer.
+
+3. MALICIOUS CODE INSERTION
+   - Backdoor inserted into m4/build-to-host.m4 (auto-configure script).
+   - Payload encoded using base64 and obfuscated within test data files.
+   - New imports (socket, base64, os, subprocess) appeared in helper scripts.
+   - Changes to install hooks (Makefile.am, CMakeLists.txt).
+   - The actual payload was never in the Python/C source — it lived in
+     binary test artifact files (*.xz) that were decoded at build time.
+
+4. RUNTIME BEHAVIORAL FINGERPRINT (what a scanner would observe)
+   - base64 decoding of embedded binary blobs at install/build time.
+   - Dynamic loading of compiled shared object (.so) at package import.
+   - Network socket creation (socket.socket) in non-network library code.
+   - Use of os.popen / subprocess.Popen for shell execution.
+   - Environment variable access: os.environ used to check LD_PRELOAD.
+   - Filesystem writes to system paths outside the package's own directory.
+   - Modified installation hook: install_data target in Makefile replaced
+     with a script that decoded and injected the malicious shared library.
+
+5. MAINTAINER TRUST SIGNALS (anomalous)
+   - Maintainer account age < 30 days at time of first commit to this project.
+   - Zero prior commit history to any other major open-source project.
+   - Commit velocity: 0 commits/month → 15 commits/month within 6 weeks.
+   - Previous long-standing maintainer removed from the project.
+   - New signing key added for releases without public key ceremony.
+   - Release tags signed with a key not listed in the project's KEYS file.
+
+6. DIFF-LEVEL SIGNALS (what AST analysis would catch)
+   - New symbol: `lzma_stream_encoder_mt` modified to call injected function.
+   - New import in configure script: `import base64; import socket`.
+   - Binary file (tests/files/bad-3-corrupt_lzma2.xz) modified — binary test
+     data files should never change unless test coverage changes; review any
+     binary blob modification carefully.
+   - Removal of safety assertions in decompression path.
+
+
+CLOSEST BEHAVIORAL PROFILE FOR VECTOR SEARCH
+---------------------------------------------
+Keywords: compression library, build system backdoor, base64 encoded payload,
+socket connection, new maintainer, account takeover, install hook modification,
+binary test file modification, LD_PRELOAD, shared library injection,
+slow trust building, social engineering, nation-state, OpenSSH, liblzma.
+
+
+DETECTION HEURISTICS
+--------------------
+- FLAG: Any compression/encoding utility that introduces network socket code.
+- FLAG: base64.b64decode called on a value that originates from a binary file.
+- FLAG: install hook that calls subprocess or os.system.
+- FLAG: Maintainer with <90 days account age pushing a release tag.
+- FLAG: Binary test data files modified in the same commit as build scripts.
+- FLAG: New dependency on ctypes or cffi in a package that previously had none.
+- FLAG: Removal of another maintainer in the same timeframe as new capability addition.
+
+
+VERDICT
+-------
+Risk: CRITICAL
+Category: Nation-state supply chain attack
+Detection window: Pre-CVE (zero-day) — no CVE existed at time of insertion.
+Caught by: Human intuition (SSH latency anomaly). NOT caught by Dependabot/Snyk.
+WATCHDOG target: This is the primary reference attack pattern WATCHDOG is
+designed to detect before it reaches production.

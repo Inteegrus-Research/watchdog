@@ -1,0 +1,179 @@
+{
+  "_comment": "Fake maintainer metadata for WATCHDOG demo packages. The 'computil' entry simulates a malicious takeover; others are benign baselines.",
+
+  "computil": {
+    "_note": "MALICIOUS — simulates XZ-Utils-style maintainer takeover",
+    "current_maintainer": {
+      "username": "ji-chen-xu",
+      "email": "jichenxu2024@protonmail.com",
+      "account_age_days": 22,
+      "commits_to_this_repo": 1,
+      "total_public_repos": 1,
+      "followers": 0,
+      "following": 0,
+      "pgp_key_listed": false,
+      "account_created": "2024-01-10",
+      "first_commit_to_repo": "2024-02-01"
+    },
+    "previous_maintainers": [
+      {
+        "username": "rolf-mueller-dev",
+        "account_age_days": 3840,
+        "commits_to_this_repo": 412,
+        "years_active": 10,
+        "removed_date": "2024-01-28",
+        "reason_given": "stepping down due to personal commitments"
+      },
+      {
+        "username": "opencomp-org",
+        "account_age_days": 2920,
+        "commits_to_this_repo": 87,
+        "years_active": 8,
+        "removed_date": "2023-11-15",
+        "reason_given": "transferred to new maintainer"
+      }
+    ],
+    "recent_commit_velocity": {
+      "commits_last_90_days": 1,
+      "commits_prev_90_days": 0,
+      "pattern": "single large commit after zero activity"
+    },
+    "package_metadata": {
+      "pypi_name": "computil",
+      "latest_version": "2.1.1",
+      "previous_version": "2.1.0",
+      "days_since_last_release": 4,
+      "release_signed": false,
+      "release_key_in_project_keys_file": false
+    },
+    "trust_score": 0.08,
+    "anomalies": [
+      "Account created 22 days ago — no prior open-source history",
+      "Single commit contains changes to build scripts AND test data files",
+      "Previous maintainer removed without public announcement",
+      "Release signing key not in project KEYS file",
+      "Commit adds base64 decoding to install hook"
+    ]
+  },
+
+  "requests": {
+    "_note": "BENIGN baseline — well-known, long-maintained HTTP library",
+    "current_maintainer": {
+      "username": "kennethreitz",
+      "email": "me@kennethreitz.org",
+      "account_age_days": 5200,
+      "commits_to_this_repo": 2100,
+      "total_public_repos": 340,
+      "followers": 15000,
+      "following": 420,
+      "pgp_key_listed": true,
+      "account_created": "2009-12-01"
+    },
+    "previous_maintainers": [
+      {
+        "username": "sigmavirus24",
+        "account_age_days": 4100,
+        "commits_to_this_repo": 890
+      },
+      {
+        "username": "nateprewitt",
+        "account_age_days": 3650,
+        "commits_to_this_repo": 540
+      }
+    ],
+    "recent_commit_velocity": {
+      "commits_last_90_days": 12,
+      "commits_prev_90_days": 18,
+      "pattern": "steady maintenance activity"
+    },
+    "package_metadata": {
+      "pypi_name": "requests",
+      "latest_version": "2.31.0",
+      "previous_version": "2.30.0",
+      "days_since_last_release": 45,
+      "release_signed": true,
+      "release_key_in_project_keys_file": true
+    },
+    "trust_score": 0.97,
+    "anomalies": []
+  },
+
+  "numpy": {
+    "_note": "BENIGN baseline — core scientific computing library",
+    "current_maintainer": {
+      "username": "charris",
+      "email": "charris@numpy.org",
+      "account_age_days": 6500,
+      "commits_to_this_repo": 4800,
+      "total_public_repos": 95,
+      "followers": 3200,
+      "following": 110,
+      "pgp_key_listed": true,
+      "account_created": "2007-04-15"
+    },
+    "previous_maintainers": [
+      {
+        "username": "mwiebe",
+        "account_age_days": 5200,
+        "commits_to_this_repo": 1200
+      },
+      {
+        "username": "rgommers",
+        "account_age_days": 4800,
+        "commits_to_this_repo": 2100
+      }
+    ],
+    "recent_commit_velocity": {
+      "commits_last_90_days": 34,
+      "commits_prev_90_days": 29,
+      "pattern": "active development, multiple contributors"
+    },
+    "package_metadata": {
+      "pypi_name": "numpy",
+      "latest_version": "1.26.4",
+      "previous_version": "1.26.3",
+      "days_since_last_release": 60,
+      "release_signed": true,
+      "release_key_in_project_keys_file": true
+    },
+    "trust_score": 0.99,
+    "anomalies": []
+  },
+
+  "flask": {
+    "_note": "BENIGN baseline — widely-used Python web framework",
+    "current_maintainer": {
+      "username": "davidism",
+      "email": "davidism@palletsprojects.com",
+      "account_age_days": 4200,
+      "commits_to_this_repo": 1650,
+      "total_public_repos": 62,
+      "followers": 1800,
+      "following": 90,
+      "pgp_key_listed": true,
+      "account_created": "2013-08-22"
+    },
+    "previous_maintainers": [
+      {
+        "username": "mitsuhiko",
+        "account_age_days": 6800,
+        "commits_to_this_repo": 2400
+      }
+    ],
+    "recent_commit_velocity": {
+      "commits_last_90_days": 9,
+      "commits_prev_90_days": 14,
+      "pattern": "stable maintenance cadence"
+    },
+    "package_metadata": {
+      "pypi_name": "flask",
+      "latest_version": "3.0.2",
+      "previous_version": "3.0.1",
+      "days_since_last_release": 30,
+      "release_signed": true,
+      "release_key_in_project_keys_file": true
+    },
+    "trust_score": 0.96,
+    "anomalies": []
+  }
+}

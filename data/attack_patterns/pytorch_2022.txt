@@ -1,0 +1,117 @@
+ATTACK PATTERN: PyTorch-nightly Supply Chain Attack (2022)
+===========================================================
+Source: PyTorch Security Advisory | Discovered: December 2022 | Severity: HIGH
+
+SUMMARY
+-------
+A dependency confusion attack targeting users of PyTorch-nightly (the unstable
+development build of the PyTorch deep-learning framework). The attacker registered
+a malicious package named `torchtriton` on the public PyPI index, knowing that
+PyTorch-nightly's installation instructions told users to install `torchtriton`
+from PyTorch's own private package index. Pip's default resolution order
+prioritised PyPI over the private index, so users received the attacker's package.
+The malicious `torchtriton` exfiltrated system information and SSH keys.
+
+
+ATTACK VECTOR: DEPENDENCY CONFUSION
+-------------------------------------
+Definition: An attacker registers a public package with the same name as an
+internal/private package used by a target organisation. Build tools that check
+public registries before private ones will silently install the attacker's version.
+
+Trigger conditions:
+  - Target uses a private package registry (PyTorch's own CDN/index).
+  - Target's build system checks PyPI (public) before the private index.
+  - Attacker registers the private package name on PyPI with a higher version number.
+  - No namespace protection (PyPI allowed registration of `torchtriton`).
+
+
+MALICIOUS PACKAGE BEHAVIORAL FINGERPRINT
+-----------------------------------------
+1. INSTALLATION HOOK ABUSE
+   - Malicious code ran inside setup.py's install() method — not in the
+     importable library code itself.
+   - This means static import analysis is insufficient; install hooks must
+     also be scanned.
+   - Pattern: `setup.py` or `pyproject.toml [tool.setuptools]` contains
+     a custom `cmdclass` or `install_requires` with a post-install script.
+
+2. DATA EXFILTRATION
+   - Read /etc/passwd, /etc/hostname for system fingerprinting.
+   - Enumerated SSH keys: glob.glob(os.path.expanduser("~/.ssh/*")).
+   - Read git config files to identify the victim organisation.
+   - Exfiltrated data via DNS TXT record queries (dns.resolver) to attacker-
+     controlled domain — bypasses many egress firewalls that allow port 53.
+   - Fallback: HTTP POST to attacker's web server.
+
+3. NEW IMPORTS (relative to legitimate torchtriton)
+   - socket (for network connectivity)
+   - base64 (for encoding exfiltrated data)
+   - os (for filesystem enumeration)
+   - glob (for SSH key discovery)
+   - subprocess (for running `uname -a`, `id`, `whoami`)
+   - dns.resolver (for DNS exfiltration — unusual dependency for an ML library)
+
+4. PACKAGE METADATA SIGNALS
+   - Package name identical to an existing private-registry package.
+   - Version number higher than the legitimate package (to win pip resolution).
+   - Author/maintainer fields blank or using a freshly created PyPI account.
+   - No README, no changelog, no tests.
+   - Description copied verbatim from the legitimate package (or left empty).
+   - Upload timestamp: within 24 hours of the legitimate package's release.
+
+5. RUNTIME BEHAVIOR
+   - Exfiltration attempts at import time (not during normal function calls).
+   - Best practice: any network call at module import time in a non-network
+     library is a strong red flag.
+   - DNS lookups to non-standard domains.
+   - Reading files outside the installed package directory.
+
+
+MAINTAINER / PROVENANCE SIGNALS
+---------------------------------
+- PyPI account created within days of package upload.
+- No prior public packages from this maintainer.
+- No PGP key associated with the account.
+- Package not listed in any legitimate project's dependency chain.
+- No GitHub repository linked from PyPI metadata.
+
+
+SCALE & IMPACT
+--------------
+- Approximately 2,500+ users downloaded the malicious package over ~3 days
+  before PyTorch issued a security advisory and the package was removed.
+- Affected users: researchers and engineers running PyTorch-nightly on Linux.
+- Exfiltrated data: SSH keys, system metadata, git configs.
+- No confirmed cases of follow-on compromise were publicly disclosed.
+
+
+DETECTION HEURISTICS
+--------------------
+- FLAG: Package name matches an internal/private package — check registry namespace conflicts.
+- FLAG: setup.py or install hook performs network calls (socket, requests, urllib).
+- FLAG: glob patterns targeting ~/.ssh/, /etc/, or home directories.
+- FLAG: dns.resolver imported in a non-DNS library.
+- FLAG: subprocess.Popen(["uname", ...]) or equivalent system fingerprinting.
+- FLAG: base64 encoding of data that is then sent via socket or HTTP.
+- FLAG: Package version higher than all known legitimate versions with a brand-new maintainer.
+- FLAG: No source code available on GitHub / no linked repository.
+- FLAG: Network activity at module import time (top-level code, not inside a function).
+
+
+CLOSEST BEHAVIORAL PROFILE FOR VECTOR SEARCH
+---------------------------------------------
+Keywords: dependency confusion, PyPI, private registry, setup.py malicious hook,
+SSH key exfiltration, DNS exfiltration, data theft, os.path.expanduser,
+socket, base64, subprocess, new maintainer, no prior history,
+deep learning, ML framework, torch, triton, install hook.
+
+
+VERDICT
+-------
+Risk: HIGH
+Category: Dependency confusion / supply chain substitution
+Detection window: Pre-CVE — no CVE assigned; PyTorch issued private advisory.
+Caught by: Internal PyTorch security team ~3 days after infection began.
+WATCHDOG target: This attack demonstrates why install hooks (setup.py, pyproject.toml
+post-install scripts) must be scanned with the same rigour as importable source code.
