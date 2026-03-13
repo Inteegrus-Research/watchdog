@@ -1,30 +1,32 @@
 """
 workflow/graph.py
 -----------------
-LangGraph state machine skeleton for the WATCHDOG pipeline.
+WATCHDOG LangGraph state machine — Day 2 update.
 
-Graph topology (Day 1 — placeholder nodes):
+Graph topology:
 
-    scanner_agent
-         │
-         ▼
-    exploit_reasoner
-         │
-         ▼
-    patch_writer ◄──────────────────────────────┐
-         │                                      │
-         ▼                                      │
-      reviewer ──(corrections needed, retries left)──┘
-         │
-         │ (approved OR max retries exhausted)
-         ▼
-    report_generator
-         │
-         ▼
-       END
+    scanner_node          ← A1: Bandit + AST scan, produces FindingRecord list
+          │
+          ▼
+    analysis_node         ← A2 (Code Analyst) + A3 (Trust Analyst) run sequentially
+          │                  produces CapabilityFingerprint + TrustSignal lists
+          ▼
+    patch_writer          ← placeholder (Day 3)
+          │
+          ▼
+       reviewer  ──(corrections needed, retries left)──► patch_writer
+          │
+          │ (approved OR max retries)
+          ▼
+    report_generator      ← placeholder (Day 3/4)
+          │
+          ▼
+         END
 
-Each node currently prints its name and returns the state unchanged.
-Real agent implementations will be wired in on Days 2–4.
+Changes from Day 1:
+  - scanner_node now calls agents.scanner.run_scanner (real Bandit).
+  - analysis_node is NEW — calls Code Analyst + Trust Analyst for each finding.
+  - patch_writer / reviewer / report_generator remain stubs (Day 3).
 """
 
 from __future__ import annotations
@@ -33,128 +35,142 @@ from typing import Literal
 
 from langgraph.graph import END, StateGraph
 
+# ── Real agent imports ─────────────────────────────────────────────────────────
+from agents.scanner import run_scanner
+from agents.code_analyst import run_code_analyst
+from agents.trust_analyst import run_trust_analyst
+
+# ── Placeholder imports (Day 3) ────────────────────────────────────────────────
+from agents.critic import run_critic
+from agents.reporter import run_reporter
+
 from workflow.state import WatchdogState, make_initial_state
 
-# ── Maximum number of patch correction cycles before we give up and report ────
 MAX_CORRECTION_CYCLES: int = 2
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Placeholder Agent Nodes
-# Each function signature must match: (state: WatchdogState) -> dict
-# (returning a dict of partial state updates is the LangGraph convention)
+# Day 2 — Real agent nodes
 # ═══════════════════════════════════════════════════════════════════════════════
 
-
-def scanner_agent(state: WatchdogState) -> dict:
+def scanner_node(state: WatchdogState) -> dict:
     """
-    SCANNER AGENT (placeholder)
-    ---------------------------
-    Real implementation (Day 2) will:
-      - Walk the target_path directory tree.
-      - Skip test files (test_*.py) and virtual-env directories.
-      - Run Bandit for static analysis and parse its JSON output.
-      - Perform custom AST analysis (utils/ast_extractor.py) to detect
-        new imports, network calls, subprocess invocations, etc.
-      - Return a list of FindingRecord objects.
+    Node 1 — Scanner Agent.
+    Runs Bandit over target_path, filters test files, returns FindingRecord list.
     """
-    print("[scanner_agent] Scanning target for vulnerabilities...")
-    # Placeholder: returns state unchanged
-    return {}
+    return run_scanner(state)
 
 
-def exploit_reasoner(state: WatchdogState) -> dict:
+def analysis_node(state: WatchdogState) -> dict:
     """
-    EXPLOIT REASONER / CODE ANALYST AGENT (placeholder)
-    -----------------------------------------------------
-    Real implementation (Day 2) will:
-      - Receive findings from the Scanner Agent.
-      - For each high-severity finding, query the LLM (via Ollama) to reason
-        about whether the finding constitutes a credible exploit path.
-      - Produce ExploitAssessment objects summarising new capabilities and
-        the likelihood of exploitation.
-      - Also build a CapabilityFingerprint for Threat Correlator input.
-    """
-    print("[exploit_reasoner] Reasoning about exploit potential...")
-    return {}
+    Node 2 — Combined Code Analyst + Trust Analyst.
 
+    Runs both agents sequentially against the findings in state and merges
+    their outputs into a single partial state update.
 
-def patch_writer(state: WatchdogState) -> dict:
+    Why combined:
+      Both agents read state["findings"] and are independent of each other,
+      so running them together in one node avoids two full state round-trips
+      while keeping the LangGraph topology simple for Day 2.
+      Day 3 can split them into parallel Send() branches if needed.
     """
-    PATCH WRITER AGENT (placeholder)
-    ---------------------------------
-    Real implementation (Day 3) will:
-      - Receive ExploitAssessments and ThreatAssessments.
-      - For each CRITICAL/HIGH threat, generate a PatchProposal:
-          * pin_version: suggest the last safe version.
-          * apply_code_patch: generate a unified diff.
-          * remove_dependency: recommend removal.
-      - If correction_mandates exist (from a previous Critic rejection),
-        incorporate the specific correction instructions before re-generating.
-    """
-    print("[patch_writer] Generating patch proposals...")
-    return {}
+    # Code Analyst → fingerprints
+    fp_update = run_code_analyst(state)
 
+    # Trust Analyst → trust_signals
+    ts_update = run_trust_analyst(state)
 
-def reviewer(state: WatchdogState) -> dict:
-    """
-    CRITIC / REVIEWER AGENT (placeholder)
-    ---------------------------------------
-    Real implementation (Day 3) will:
-      - Evaluate each PatchProposal for correctness, safety, and completeness.
-      - Approve safe, well-reasoned patches (ReviewVerdict.approved = True).
-      - Reject flawed patches with specific feedback (ReviewVerdict.approved = False).
-      - Emit CorrectionMandate objects for rejected patches.
-      - Increment correction_count in state.
-    """
-    print("[reviewer] Reviewing patch proposals...")
-    # Placeholder: auto-approve everything so the graph reaches END
-    return {"correction_count": state.get("correction_count", 0)}
-
-
-def report_generator(state: WatchdogState) -> dict:
-    """
-    REPORT GENERATOR AGENT (placeholder)
-    --------------------------------------
-    Real implementation (Day 4) will:
-      - Aggregate all findings, assessments, threat verdicts, and patches.
-      - Render the Jinja2 templates (templates/report.md.j2 and report.html.j2).
-      - Produce a complete security advisory with:
-          * Executive summary
-          * Per-package findings with code citations
-          * Historical attack pattern references
-          * Concrete remediation steps
-      - Store the rendered report in state["final_report"].
-    """
-    print("[report_generator] Generating final security report...")
-    report_text = (
-        "# WATCHDOG Security Report\n\n"
-        "_Placeholder report — real content generated on Day 4._\n\n"
-        f"Target: `{state.get('target_path', 'unknown')}`\n"
-        f"Findings: {len(state.get('findings', []))}\n"
-        f"Patches: {len(state.get('patches', []))}\n"
-    )
-    return {"final_report": report_text}
+    return {**fp_update, **ts_update}
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Conditional Routing
+# Day 1 stubs (still placeholders — Day 3 will replace these)
 # ═══════════════════════════════════════════════════════════════════════════════
 
-
-def _route_after_review(state: WatchdogState) -> Literal["patch_writer", "report_generator"]:
+def patch_writer_node(state: WatchdogState) -> dict:
     """
-    Conditional edge function called after the reviewer node.
+    Placeholder Patch Writer — Day 3 will generate PatchProposal objects here.
+    For now, emits a synthetic placeholder patch per HIGH/CRITICAL finding
+    so the reviewer node has something to evaluate.
+    """
+    from schemas.models import PatchProposal
 
-    Logic:
-    - If any patches were rejected AND we have retries remaining → route back
-      to patch_writer for a correction cycle.
-    - Otherwise (all approved, or max retries exhausted) → proceed to report.
+    findings = state.get("findings", [])
+    trust_signals = state.get("trust_signals", [])
+
+    # Build a quick lookup: package → trust_score
+    trust_lookup: dict[str, float] = {
+        ts.package_name: ts.trust_score
+        for ts in trust_signals
+    }
+
+    patches: list[PatchProposal] = []
+    seen_packages: set[str] = set()
+
+    for finding in findings:
+        pkg = finding.package_name
+        if pkg in seen_packages:
+            continue
+        seen_packages.add(pkg)
+
+        trust = trust_lookup.get(pkg, 0.5)
+
+        if trust < 0.30:
+            action = "remove_dependency"
+            rationale = (
+                f"Package '{pkg}' has a critically low trust score ({trust:.2f}) "
+                f"consistent with a supply chain compromise. Removal recommended."
+            )
+            confidence = 0.85
+        elif finding.severity in ("HIGH", "CRITICAL"):
+            action = "apply_code_patch"
+            rationale = (
+                f"Finding of type '{finding.finding_type}' detected in '{pkg}' "
+                f"(severity={finding.severity}).  Manual code review and patching required."
+            )
+            confidence = 0.70
+        else:
+            action = "monitor_only"
+            rationale = f"Low-severity finding in '{pkg}'; monitoring recommended."
+            confidence = 0.60
+
+        patches.append(PatchProposal(
+            package_name=pkg,
+            proposed_action=action,      # type: ignore[arg-type]
+            rationale=rationale,
+            confidence=confidence,
+        ))
+
+    print(f"[patch_writer] Generated {len(patches)} placeholder patch(es).")
+    return {"patches": patches}
+
+
+def reviewer_node(state: WatchdogState) -> dict:
+    """
+    Placeholder Reviewer / Critic — Day 3 will run adversarial LLM review here.
+    For now, auto-approves all patches so the graph can reach END cleanly.
+    """
+    return run_critic(state)
+
+
+def report_node(state: WatchdogState) -> dict:
+    """
+    Placeholder Report Generator — Day 4 will render Jinja2 templates here.
+    """
+    return run_reporter(state)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Conditional routing
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def _route_after_review(state: WatchdogState) -> Literal["patch_writer_node", "report_node"]:
+    """
+    Route back to patch_writer if the Critic rejected any patch and we have
+    retries remaining; otherwise proceed to the report generator.
     """
     correction_count = state.get("correction_count", 0)
     verdicts = state.get("verdicts", [])
-
-    # Check whether any verdict was a rejection
     has_rejection = any(not v.approved for v in verdicts)
 
     if has_rejection and correction_count < MAX_CORRECTION_CYCLES:
@@ -162,23 +178,19 @@ def _route_after_review(state: WatchdogState) -> Literal["patch_writer", "report
             f"[router] Rejection found — routing to patch_writer "
             f"(cycle {correction_count + 1}/{MAX_CORRECTION_CYCLES})"
         )
-        return "patch_writer"
+        return "patch_writer_node"
 
     if correction_count >= MAX_CORRECTION_CYCLES:
-        print(
-            f"[router] Max correction cycles ({MAX_CORRECTION_CYCLES}) reached — "
-            "proceeding to report with best-effort patches."
-        )
+        print(f"[router] Max cycles ({MAX_CORRECTION_CYCLES}) reached — proceeding to report.")
     else:
         print("[router] All patches approved — proceeding to report.")
 
-    return "report_generator"
+    return "report_node"
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Graph Assembly
+# Graph assembly
 # ═══════════════════════════════════════════════════════════════════════════════
-
 
 def build_graph() -> StateGraph:
     """
@@ -186,68 +198,61 @@ def build_graph() -> StateGraph:
 
     Returns
     -------
-    StateGraph
-        A compiled graph ready to invoke with a WatchdogState dict.
+    Compiled StateGraph ready to invoke.
     """
     graph = StateGraph(WatchdogState)
 
-    # ── Register nodes ─────────────────────────────────────────────────────────
-    graph.add_node("scanner_agent", scanner_agent)
-    graph.add_node("exploit_reasoner", exploit_reasoner)
-    graph.add_node("patch_writer", patch_writer)
-    graph.add_node("reviewer", reviewer)
-    graph.add_node("report_generator", report_generator)
+    # Register nodes
+    graph.add_node("scanner_node",       scanner_node)
+    graph.add_node("analysis_node",      analysis_node)
+    graph.add_node("patch_writer_node",  patch_writer_node)
+    graph.add_node("reviewer_node",      reviewer_node)
+    graph.add_node("report_node",        report_node)
 
-    # ── Entry point ────────────────────────────────────────────────────────────
-    graph.set_entry_point("scanner_agent")
+    # Entry point
+    graph.set_entry_point("scanner_node")
 
-    # ── Linear edges ──────────────────────────────────────────────────────────
-    graph.add_edge("scanner_agent", "exploit_reasoner")
-    graph.add_edge("exploit_reasoner", "patch_writer")
-    graph.add_edge("patch_writer", "reviewer")
+    # Linear flow
+    graph.add_edge("scanner_node",      "analysis_node")
+    graph.add_edge("analysis_node",     "patch_writer_node")
+    graph.add_edge("patch_writer_node", "reviewer_node")
 
-    # ── Conditional edge: reviewer → (patch_writer | report_generator) ────────
+    # Conditional: reviewer → (patch_writer | report)
     graph.add_conditional_edges(
-        "reviewer",
+        "reviewer_node",
         _route_after_review,
         {
-            "patch_writer": "patch_writer",
-            "report_generator": "report_generator",
+            "patch_writer_node": "patch_writer_node",
+            "report_node":       "report_node",
         },
     )
 
-    # ── Terminal edge ──────────────────────────────────────────────────────────
-    graph.add_edge("report_generator", END)
+    graph.add_edge("report_node", END)
 
     return graph.compile()
 
 
-# ── Module-level compiled graph (importable by other modules) ──────────────────
+# Module-level compiled graph (importable)
 watchdog_graph = build_graph()
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Main — smoke test
+# __main__ smoke test
 # ═══════════════════════════════════════════════════════════════════════════════
 
 if __name__ == "__main__":
+    import sys
+    target = sys.argv[1] if len(sys.argv) > 1 else "vuln_app/"
+    print(f"Running WATCHDOG pipeline on: {target}")
     print("=" * 60)
-    print("WATCHDOG — LangGraph Skeleton Smoke Test")
+
+    state = make_initial_state(target_path=target, use_llm=False)
+    final = watchdog_graph.invoke(state)
+
+    print("\n── Final State ──────────────────────────────────────────────")
+    print(f"Findings       : {len(final.get('findings', []))}")
+    print(f"Fingerprints   : {len(final.get('fingerprints', []))}")
+    print(f"Trust signals  : {len(final.get('trust_signals', []))}")
+    print(f"Patches        : {len(final.get('patches', []))}")
+    print(f"Report length  : {len(final.get('final_report', ''))} chars")
     print("=" * 60)
-
-    initial_state = make_initial_state(target_path="vuln_app/")
-
-    print(f"Starting graph with target: {initial_state['target_path']}\n")
-
-    final_state = watchdog_graph.invoke(initial_state)
-
-    print("\n--- Final State Summary ---")
-    print(f"Findings         : {len(final_state.get('findings', []))}")
-    print(f"Assessments      : {len(final_state.get('assessments', []))}")
-    print(f"Patches          : {len(final_state.get('patches', []))}")
-    print(f"Correction cycles: {final_state.get('correction_count', 0)}")
-    print(f"Report length    : {len(final_state.get('final_report', ''))} chars")
-    print("\nFinal Report Preview:")
-    print(final_state.get("final_report", "(empty)"))
-    print("=" * 60)
-    print("Graph ran successfully ✓")

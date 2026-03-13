@@ -88,11 +88,33 @@ class CapabilityVisitor(ast.NodeVisitor):
 
     # ── Call visitors ──────────────────────────────────────────────────────────
 
+    def visit_Attribute(self, node: ast.Attribute) -> None:  # noqa: N802
+        """Catch bare `os.environ` attribute accesses (reads, not calls)."""
+        if _matches_attr(node, "os", "environ"):
+            # Record the line; use unparse if available
+            try:
+                call_str = ast.unparse(node)
+            except Exception:
+                call_str = "os.environ"
+            self.findings.env_accesses.append((node.lineno, call_str))
+        self.generic_visit(node)
+
     def visit_Call(self, node: ast.Call) -> None:  # noqa: N802
         call_str = ast.unparse(node) if hasattr(ast, "unparse") else "<call>"
 
-        # os.environ / os.getenv
-        if _matches_attr(node.func, "os", "environ") or _matches_attr(node.func, "os", "getenv"):
+        # os.getenv(...)
+        if _matches_attr(node.func, "os", "getenv"):
+            self.findings.env_accesses.append((node.lineno, call_str))
+
+        # os.environ.get(...) / os.environ.items() / os.environ.keys() etc.
+        # AST: Call(func=Attribute(value=Attribute(value=Name('os'), attr='environ'), attr=*))
+        if (
+            isinstance(node.func, ast.Attribute)
+            and isinstance(node.func.value, ast.Attribute)
+            and isinstance(node.func.value.value, ast.Name)
+            and node.func.value.value.id == "os"
+            and node.func.value.attr == "environ"
+        ):
             self.findings.env_accesses.append((node.lineno, call_str))
 
         # socket.socket(...)
