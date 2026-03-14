@@ -1,1 +1,224 @@
+{# templates/report.md.j2
+   WATCHDOG Security Advisory — Full Markdown template.
+   Rendered by agents/reporter.py (generate_report function).
 
+   Context variables:
+     target_path        : str
+     scan_timestamp     : str
+     scan_duration_s    : float
+     findings           : List[FindingRecord]
+     fingerprints       : List[CapabilityFingerprint]
+     trust_signals      : List[TrustSignal]
+     threat_assessments : List[ThreatAssessment]
+     patches            : List[PatchProposal]
+     verdicts           : List[ReviewVerdict]
+     mandates           : List[CorrectionMandate]
+     correction_count   : int
+     final_report_md    : str  (populated after first render; empty on first pass)
+#}
+{%- set crit_list = threat_assessments | selectattr("risk_level","equalto","CRITICAL") | list -%}
+{%- set high_list = threat_assessments | selectattr("risk_level","equalto","HIGH")     | list -%}
+{%- set med_list  = threat_assessments | selectattr("risk_level","equalto","MEDIUM")   | list -%}
+{%- set appr_cnt  = verdicts | selectattr("approved","equalto",true)  | list | length -%}
+{%- set rej_cnt   = verdicts | selectattr("approved","equalto",false) | list | length -%}
+# 🐕 WATCHDOG Security Advisory
+
+| Field | Value |
+|-------|-------|
+| **Target** | `{{ target_path }}` |
+| **Scan time** | {{ scan_timestamp }} |
+{% if scan_duration_s %}| **Duration** | {{ "%.1f"|format(scan_duration_s) }}s |
+{% endif %}| **Total findings** | {{ findings | length }} |
+| **CRITICAL packages** | {{ crit_list | length }} |
+| **HIGH packages** | {{ high_list | length }} |
+| **Patches generated** | {{ patches | length }} |
+| **Approved / Rejected** | {{ appr_cnt }} / {{ rej_cnt }} |
+| **Correction cycles** | {{ correction_count }} |
+
+---
+
+## Executive Summary
+
+{% if crit_list | length > 0 %}
+> ⛔ **CRITICAL** — {{ crit_list | length }} package(s) exhibit behaviour consistent with an
+> active supply chain compromise. **Immediate action required.**
+{% elif high_list | length > 0 %}
+> 🔴 **HIGH** — {{ high_list | length }} package(s) have high-severity findings requiring
+> prompt remediation.
+{% elif med_list | length > 0 %}
+> 🟡 **MEDIUM** — {{ med_list | length }} package(s) have medium-severity findings.
+> Review at your earliest convenience.
+{% else %}
+> ✅ **CLEAN** — No significant supply chain threats detected in this scan.
+{% endif %}
+
+{% if correction_count > 0 %}
+> 🔄 **Self-Correction Loop:** The Reviewer Agent triggered {{ correction_count }} correction
+> cycle(s). Patches were re-generated and approved automatically.
+{% endif %}
+
+---
+
+## Threat Assessment Overview
+
+| Package | Risk | Similarity | Pattern | Trust | Deeper? |
+|---------|------|-----------|---------|-------|---------|
+{% for ta in threat_assessments -%}
+{%- set ts = trust_signals | selectattr("package_name","equalto",ta.package_name) | first | default(None) -%}
+| `{{ ta.package_name }}` | **{{ ta.risk_level }}** | {{ "%.3f"|format(ta.pattern_similarity_score) if ta.pattern_similarity_score else "—" }} | {{ (ta.closest_attack_pattern or "heuristic")[:30] }} | {{ "%.2f"|format(ts.trust_score) if ts else "?" }} | {{ "⚑ yes" if ta.requires_deeper_analysis else "no" }} |
+{% endfor %}
+
+---
+
+## Findings Detail
+
+{% for finding in findings %}
+{%- set ta = threat_assessments | selectattr("package_name","equalto",finding.package_name) | first | default(None) -%}
+{%- set ts = trust_signals      | selectattr("package_name","equalto",finding.package_name) | first | default(None) -%}
+{%- set fp = fingerprints       | selectattr("package_name","equalto",finding.package_name) | first | default(None) -%}
+{%- set risk_icon = {"CRITICAL":"🔴","HIGH":"🟠","MEDIUM":"🟡","LOW":"🟢","NONE":"✅"}.get(ta.risk_level if ta else "LOW","❓") -%}
+### Finding {{ loop.index }}: {{ risk_icon }} `{{ finding.finding_type | replace('_',' ') | title }}` in `{{ finding.package_name }}`
+
+| Field | Value |
+|-------|-------|
+| **File** | `{{ finding.file_path }}:{{ finding.line_number }}` |
+| **Severity** | {{ finding.severity }} |
+| **Type** | `{{ finding.finding_type }}` |
+| **Risk level** | {{ ta.risk_level if ta else "—" }} |
+
+**Description:** {{ finding.description }}
+
+{% if finding.code_snippet %}
+```python
+{{ finding.code_snippet }}
+```
+{% endif %}
+
+{% if ta %}
+#### 🎯 Threat Assessment
+
+- **Risk:** {{ ta.risk_level }}{% if ta.closest_attack_pattern %} · Closest pattern: *{{ ta.closest_attack_pattern }}*{% endif %}
+{% if ta.pattern_similarity_score %}- **Similarity score:** {{ "%.3f"|format(ta.pattern_similarity_score) }}{% endif %}
+
+- **Reasoning:** {{ ta.final_reasoning }}
+{% if ta.requires_deeper_analysis %}- ⚑ *Flagged for deeper analysis (borderline similarity score)*{% endif %}
+
+{% endif %}
+{% if fp %}
+#### 🔬 Capability Fingerprint
+
+| Capability | Detected |
+|-----------|---------|
+| Network calls | {{ "🔴 YES" if fp.network_calls else "✅ no" }} |
+| Subprocess execution | {{ "🔴 YES" if fp.subprocess_calls else "✅ no" }} |
+| Base64 payloads | {{ "🔴 YES" if fp.base64_encoded_payloads else "✅ no" }} |
+| Environment access | {{ "🔴 YES" if fp.env_variable_access else "✅ no" }} |
+| Filesystem writes | {{ "🔴 YES" if fp.filesystem_writes else "✅ no" }} |
+| Install hook modified | {{ "🔴 YES" if fp.install_hook_modified else "✅ no" }} |
+
+{% endif %}
+{% if ts %}
+#### 🔑 Maintainer Trust
+
+- **Trust score:** {{ "%.2f"|format(ts.trust_score) }} / 1.00{% if ts.trust_score < 0.3 %} ⛔ CRITICAL{% elif ts.trust_score < 0.6 %} ⚠️ SUSPICIOUS{% else %} ✅ OK{% endif %}
+- **Maintainer:** {{ ts.maintainer_username or "unknown" }}
+- **Account age:** {{ ts.account_age_days or "?" }} days
+- **Commits:** {{ ts.commit_count or "?" }}
+{% if ts.anomalies %}
+- **Anomalies:**
+{% for a in ts.anomalies[:5] %}  - ⚠️ {{ a }}
+{% endfor %}
+{% endif %}
+- **Reasoning:** {{ ts.reasoning[:200] }}
+
+{% endif %}
+---
+
+{% endfor %}
+
+## Remediation Proposals
+
+{% for patch in patches %}
+{%- set verdict = verdicts | selectattr("package_name","equalto",patch.package_name) | first | default(None) -%}
+{%- set was_corrected = mandates | selectattr("package_name","equalto",patch.package_name) | list | length > 0 -%}
+### `{{ patch.package_name }}` — `{{ patch.proposed_action }}`
+
+**Status:** {% if verdict %}{{ "✅ APPROVED" if verdict.approved else "❌ REJECTED" }}{% else %}—{% endif %}
+{% if was_corrected and verdict and verdict.approved %} · 🔄 **Corrected after rejection**{% endif %}
+
+**Confidence:** {{ (patch.confidence * 100)|int }}%
+
+**Rationale:** {{ patch.rationale }}
+
+{% if patch.proposed_action == 'apply_code_patch' and patch.patch_diff %}
+```diff
+{{ patch.patch_diff }}
+```
+{% elif patch.proposed_action == 'remove_dependency' %}
+> ⛔ **REMOVE IMMEDIATELY.** Do not use `{{ patch.package_name }}` in any environment.
+> Audit all systems that may have already installed this package.
+{% elif patch.proposed_action == 'pin_version' and patch.safe_version %}
+```
+# requirements.txt
+{{ patch.package_name }}=={{ patch.safe_version }}
+```
+{% elif patch.proposed_action == 'monitor_only' %}
+> 👀 **Monitor only.** Re-scan after next release. No immediate action required.
+{% endif %}
+
+{% if verdict and not verdict.approved and verdict.feedback %}
+> **Rejection reason:** {{ verdict.feedback }}
+{% endif %}
+
+{% for mandate in mandates %}{% if mandate.package_name == patch.package_name %}
+> 🔄 **Correction mandate issued:**
+{% for instr in mandate.correction_instructions[:3] %}> - {{ instr }}
+{% endfor %}
+{% endif %}{% endfor %}
+
+{% endfor %}
+
+---
+
+{% if correction_count > 0 %}
+## Self-Correction Loop Summary
+
+The Reviewer Agent identified deficiencies in **{{ correction_count }}** patch(es) during automated
+adversarial review. The Patch Writer re-generated corrected versions which were subsequently approved.
+
+| Cycle | Rejection Reason | Resolution |
+|-------|-----------------|------------|
+{% for mandate in mandates -%}
+| {{ loop.index }} | {{ mandate.correction_instructions[0][:80] }} | Re-generated and approved |
+{% endfor %}
+
+---
+{% endif %}
+
+## Appendix: Raw Agent Output
+
+<details>
+<summary>Trust Signals</summary>
+
+{% for ts in trust_signals %}
+**{{ ts.package_name }}:** score={{ "%.2f"|format(ts.trust_score) }}  maintainer={{ ts.maintainer_username or "?" }}  age={{ ts.account_age_days or "?" }}d  commits={{ ts.commit_count or "?" }}
+Anomalies: {{ ts.anomalies | join("; ") if ts.anomalies else "none" }}
+Reasoning: {{ ts.reasoning[:200] }}
+
+{% endfor %}
+</details>
+
+<details>
+<summary>Capability Fingerprints</summary>
+
+{% for fp in fingerprints %}
+**{{ fp.package_name }}:** network={{ fp.network_calls }}  subprocess={{ fp.subprocess_calls }}  base64={{ fp.base64_encoded_payloads }}  env={{ fp.env_variable_access }}
+Text: {{ fp.fingerprint_text[:200] }}
+
+{% endfor %}
+</details>
+
+---
+
+*Generated by **WATCHDOG v1.0** · Autonomous Software Supply Chain Threat Intelligence*
+*{{ scan_timestamp }}*

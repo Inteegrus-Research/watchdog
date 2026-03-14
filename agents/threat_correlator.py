@@ -23,6 +23,12 @@ Risk-level decision logic:
     trust_score < 0.30  → bump one level up (MEDIUM→HIGH, HIGH→CRITICAL, etc.)
     trust_score > 0.85  → reduce one level (CRITICAL→HIGH, HIGH→MEDIUM, etc.)
 
+  ⚠️ EXTRA RULE for demo clarity:
+      If trust_score < 0.1 AND any of (network, base64, subprocess) capabilities
+      are present, the risk is forced to CRITICAL — this ensures that
+      extremely suspicious packages (like our simulated `computil`) get the
+      highest severity without hardcoding package names.
+
   Requires-deeper-analysis flag:
     Set True when base level is HIGH or CRITICAL but similarity < 0.80
     (i.e. the pattern match is suggestive but not conclusive).
@@ -86,7 +92,7 @@ def _similarity_to_risk(similarity: float) -> str:
 
 
 def _adjust_for_trust(risk: str, trust_score: float) -> str:
-    """Bump risk up for low-trust maintainers, down for highly trusted ones."""
+    """Bump risk up for low‑trust maintainers, down for highly trusted ones."""
     if trust_score < 0.30:
         adjusted = _bump_up(risk)
         if adjusted != risk:
@@ -104,8 +110,8 @@ def _adjust_for_trust(risk: str, trust_score: float) -> str:
 
 def _build_query(fp: CapabilityFingerprint, trust: TrustSignal) -> str:
     """
-    Build a human-readable query string from a CapabilityFingerprint + TrustSignal.
-    This is what gets embedded and compared against the attack-pattern vectors.
+    Build a human‑readable query string from a CapabilityFingerprint + TrustSignal.
+    This is what gets embedded and compared against the attack‑pattern vectors.
     """
     parts: list[str] = []
 
@@ -184,10 +190,10 @@ def _query_chromadb(query_text: str, n_results: int = 2) -> list[dict]:
 
 def _heuristic_risk(fp: CapabilityFingerprint, trust: TrustSignal) -> tuple[str, float, str]:
     """
-    Rule-based risk estimate when ChromaDB is unavailable.
+    Rule‑based risk estimate when ChromaDB is unavailable.
     Returns (risk_level, synthetic_similarity, closest_pattern_name).
     """
-    # Count how many XZ-Utils-like signals are present
+    # Count how many XZ‑Utils‑like signals are present
     signals = sum([
         fp.network_calls,
         fp.base64_encoded_payloads,
@@ -205,7 +211,7 @@ def _heuristic_risk(fp: CapabilityFingerprint, trust: TrustSignal) -> tuple[str,
     return "NONE", 0.05, "No suspicious capabilities detected"
 
 
-# ── Per-package assessment ─────────────────────────────────────────────────────
+# ── Per‑package assessment ─────────────────────────────────────────────────────
 
 def assess_package(
     fp: CapabilityFingerprint,
@@ -215,6 +221,7 @@ def assess_package(
     Produce a ThreatAssessment for one package by combining:
       - ChromaDB semantic similarity search (or heuristic fallback)
       - Trust score adjustment
+      - Extremely low‑trust + suspicious capabilities → CRITICAL (demo‑safe rule)
 
     Parameters
     ----------
@@ -278,10 +285,17 @@ def assess_package(
         trust_summary = f"Trust score: {trust.trust_score:.2f}"
         _log(f"    Heuristic risk: {base_risk}  similarity(approx)={similarity:.2f}")
 
-    # Apply trust-score adjustment
+    # Apply trust‑score adjustment
     final_risk = _adjust_for_trust(base_risk, trust.trust_score)
 
-    # Requires-deeper-analysis flag: borderline HIGH/CRITICAL matches
+    # ── EXTRA RULE: extremely low trust + suspicious capabilities → CRITICAL ──
+    if trust.trust_score < 0.1 and (fp.network_calls or fp.base64_encoded_payloads or fp.subprocess_calls):
+        if final_risk != "CRITICAL":
+            _log(f"    Extremely low trust + suspicious capabilities → forcing CRITICAL")
+            final_risk = "CRITICAL"
+    # ───────────────────────────────────────────────────────────────────────────
+
+    # Requires‑deeper‑analysis flag: borderline HIGH/CRITICAL matches
     needs_deeper = (
         final_risk in ("HIGH", "CRITICAL")
         and similarity < 0.80
@@ -341,7 +355,7 @@ def correlate(
 
     _log(
         f"Correlating {len(fingerprints)} fingerprint(s) against "
-        f"attack-pattern knowledge base..."
+        f"attack‑pattern knowledge base..."
     )
 
     assessments: list[ThreatAssessment] = []

@@ -66,6 +66,7 @@ class WatchdogState(TypedDict):
     correction_mandates: List[CorrectionMandate]
     correction_count: int
     final_report: str
+    final_report_html: str
 
     # ── Day 2 ──────────────────────────────────────────────────────────────────
     fingerprints: List[CapabilityFingerprint]
@@ -98,6 +99,7 @@ def make_initial_state(
         correction_mandates=[],
         correction_count=0,
         final_report="",
+        final_report_html="",
         # ── Day 2 fields ───────────────────────────────────────────────────────
         fingerprints=[],
         trust_signals=[],

@@ -1,0 +1,594 @@
+{# templates/report.html.j2 ─ WATCHDOG Security Advisory ─ Day 4 full implementation
+   Self-contained HTML (inline CSS + JS), dark-mode, judge-ready.
+   Context variables:
+     target_path, scan_timestamp, scan_duration_s
+     findings           : List[FindingRecord]
+     fingerprints       : List[CapabilityFingerprint]
+     trust_signals      : List[TrustSignal]
+     threat_assessments : List[ThreatAssessment]
+     patches            : List[PatchProposal]
+     verdicts           : List[ReviewVerdict]
+     mandates           : List[CorrectionMandate]
+     correction_count   : int
+     final_report_md    : str  (Markdown version)
+#}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🐕 WATCHDOG — {{ target_path }}</title>
+<style>
+:root{
+  --bg:#0d1117;--surface:#161b22;--surface2:#1c2128;--border:#30363d;
+  --text:#c9d1d9;--muted:#8b949e;--accent:#58a6ff;--accent2:#388bfd;
+  --critical:#ff4444;--high:#ff7b00;--medium:#f0c000;--low:#3fb950;
+  --code-bg:#010409;--radius:8px;--shadow:0 4px 24px rgba(0,0,0,.4);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  background:var(--bg);color:var(--text);padding:0;line-height:1.65;font-size:15px}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* ── Layout ── */
+.page-wrap{max-width:1100px;margin:0 auto;padding:2.5rem 2rem}
+
+/* ── Header ── */
+header{display:flex;align-items:center;gap:1.2rem;border-bottom:1px solid var(--border);
+  padding-bottom:1.5rem;margin-bottom:2rem}
+header .logo{font-size:2.4rem}
+header h1{font-size:1.6rem;font-weight:700;color:var(--accent);margin:0}
+header p{color:var(--muted);font-size:.88rem;margin-top:.15rem}
+.meta-bar{display:flex;flex-wrap:wrap;gap:.5rem 1.5rem;margin-top:.7rem}
+.meta-bar span{font-size:.82rem;color:var(--muted)}
+.meta-bar strong{color:var(--text)}
+
+/* ── Nav Tabs ── */
+.tabs{display:flex;gap:.25rem;border-bottom:1px solid var(--border);margin-bottom:2rem}
+.tab-btn{background:none;border:none;border-bottom:2px solid transparent;
+  color:var(--muted);cursor:pointer;padding:.55rem 1.1rem;font-size:.88rem;font-weight:500;
+  transition:color .15s,border-color .15s}
+.tab-btn:hover{color:var(--text)}
+.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
+.tab-pane{display:none}.tab-pane.active{display:block}
+
+/* ── Summary cards ── */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+  gap:1rem;margin-bottom:2.5rem}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:1.1rem 1.4rem;text-align:center}
+.card .val{font-size:2rem;font-weight:700;line-height:1.1}
+.card .label{font-size:.78rem;color:var(--muted);margin-top:.3rem;text-transform:uppercase;letter-spacing:.05em}
+.card.critical .val{color:var(--critical)}
+.card.high     .val{color:var(--high)}
+.card.medium   .val{color:var(--medium)}
+.card.low      .val{color:var(--low)}
+.card.info     .val{color:var(--accent)}
+.card.corrected .val{color:#d2a8ff}
+
+/* ── Executive alert banner ── */
+.alert{border-radius:var(--radius);padding:1rem 1.4rem;margin-bottom:2rem;
+  border-left:4px solid;font-weight:500;line-height:1.5}
+.alert.critical{background:#2d1616;border-color:var(--critical);color:#ff8888}
+.alert.high    {background:#2b1c0a;border-color:var(--high);color:#ffaa55}
+.alert.medium  {background:#2a2200;border-color:var(--medium);color:#f0c000}
+.alert.low     {background:#0d2218;border-color:var(--low);color:#56d364}
+.alert.clean   {background:#0d2218;border-color:var(--low);color:#56d364}
+
+/* ── Badges ── */
+.badge{display:inline-block;padding:.18em .55em;border-radius:4px;font-size:.74rem;
+  font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.badge.CRITICAL{background:#3d0000;color:var(--critical);border:1px solid var(--critical)}
+.badge.HIGH    {background:#2b1500;color:var(--high);    border:1px solid var(--high)}
+.badge.MEDIUM  {background:#2a1f00;color:var(--medium);  border:1px solid var(--medium)}
+.badge.LOW     {background:#0d2010;color:var(--low);     border:1px solid var(--low)}
+.badge.NONE    {background:#1a1a2e;color:var(--muted);   border:1px solid var(--border)}
+.badge.approved{background:#0d2010;color:var(--low);     border:1px solid var(--low)}
+.badge.rejected{background:#3d0000;color:var(--critical);border:1px solid var(--critical)}
+.badge.corrected{background:#1e0d33;color:#d2a8ff;       border:1px solid #8957e5}
+
+/* ── Section headings ── */
+.section-title{font-size:1.05rem;font-weight:700;color:var(--accent);
+  margin:2.5rem 0 1rem;padding-bottom:.4rem;border-bottom:1px solid var(--border)}
+
+/* ── Finding cards ── */
+.finding{background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);margin-bottom:1.2rem;overflow:hidden}
+.finding-header{display:flex;align-items:center;gap:.8rem;
+  padding:.85rem 1.2rem;cursor:pointer;user-select:none}
+.finding-header:hover{background:var(--surface2)}
+.finding-number{background:var(--surface2);color:var(--muted);
+  width:1.8rem;height:1.8rem;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-size:.78rem;font-weight:700;flex-shrink:0}
+.finding-title{flex:1;font-weight:600;font-size:.95rem}
+.finding-file{font-size:.78rem;color:var(--muted);font-family:monospace}
+.finding-body{padding:1.2rem;border-top:1px solid var(--border);display:none}
+.finding-body.open{display:block}
+.finding-body.corrected-finding{border-left:3px solid #8957e5}
+
+/* ── Grid layouts ── */
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.info-box{background:var(--surface2);border:1px solid var(--border);
+  border-radius:6px;padding:.8rem 1rem}
+.info-box .label{font-size:.75rem;color:var(--muted);text-transform:uppercase;
+  letter-spacing:.05em;margin-bottom:.35rem}
+.info-box .val{font-size:.88rem}
+@media(max-width:640px){.info-grid{grid-template-columns:1fr}}
+
+/* ── Threat block ── */
+.threat-block{background:var(--surface2);border-radius:6px;padding:.9rem 1rem;
+  margin:.8rem 0;border-left:3px solid var(--border)}
+.threat-block.CRITICAL{border-left-color:var(--critical)}
+.threat-block.HIGH    {border-left-color:var(--high)}
+.threat-block.MEDIUM  {border-left-color:var(--medium)}
+.threat-block.LOW     {border-left-color:var(--low)}
+
+/* ── Code blocks ── */
+pre,code{font-family:"SFMono-Regular","Fira Code","Cascadia Code",monospace;font-size:.82rem}
+.code-block{background:var(--code-bg);border:1px solid var(--border);
+  border-radius:6px;overflow:auto;margin:.6rem 0}
+.code-block pre{padding:1rem;white-space:pre}
+.diff-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin:.8rem 0}
+.diff-pane{background:var(--code-bg);border:1px solid var(--border);border-radius:6px;overflow:auto}
+.diff-pane .pane-title{font-size:.74rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:.05em;padding:.4rem .8rem;border-bottom:1px solid var(--border);
+  color:var(--muted)}
+.diff-pane.before .pane-title{color:#ff8888}
+.diff-pane.after  .pane-title{color:#56d364}
+.diff-pane pre{padding:.8rem;font-size:.8rem;white-space:pre}
+@media(max-width:700px){.diff-grid{grid-template-columns:1fr}}
+
+/* ── Patch block ── */
+.patch-block{background:var(--surface2);border:1px solid var(--border);
+  border-radius:6px;padding:.9rem 1rem;margin:.8rem 0}
+.patch-action{display:inline-block;padding:.2em .6em;border-radius:4px;
+  font-size:.74rem;font-weight:700}
+.action-remove{background:#3d0000;color:#ff8888;border:1px solid var(--critical)}
+.action-patch {background:#0d1f33;color:#79c0ff;border:1px solid var(--accent)}
+.action-pin   {background:#2a1f00;color:#f0c000;border:1px solid var(--medium)}
+.action-monitor{background:#1a1a2e;color:var(--muted);border:1px solid var(--border)}
+
+/* ── Correction notice ── */
+.correction-notice{background:#1e0d33;border:1px solid #8957e5;border-radius:6px;
+  padding:.7rem 1rem;margin:.6rem 0;font-size:.86rem;color:#d2a8ff}
+.correction-notice .icon{margin-right:.4rem}
+
+/* ── Fingerprint flags ── */
+.flags{display:flex;flex-wrap:wrap;gap:.4rem;margin:.5rem 0}
+.flag{padding:.15em .5em;border-radius:4px;font-size:.75rem;font-weight:600}
+.flag.on {background:#3d0000;color:#ff8888;border:1px solid var(--critical)}
+.flag.off{background:var(--surface);color:var(--muted);border:1px solid var(--border)}
+
+/* ── Table ── */
+table{width:100%;border-collapse:collapse;font-size:.86rem;margin:.8rem 0}
+th{background:var(--surface2);color:var(--muted);font-size:.75rem;
+  text-transform:uppercase;letter-spacing:.05em;padding:.5rem .9rem;
+  text-align:left;border-bottom:2px solid var(--border)}
+td{padding:.55rem .9rem;border-bottom:1px solid var(--border)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--surface2)}
+
+/* ── Trust bar ── */
+.trust-bar-wrap{height:8px;background:var(--surface);border-radius:4px;overflow:hidden;width:120px;display:inline-block;vertical-align:middle}
+.trust-bar{height:100%;border-radius:4px;transition:width .3s}
+
+/* ── Anomaly list ── */
+.anomaly-list{list-style:none;padding:0;margin:.4rem 0}
+.anomaly-list li{font-size:.83rem;color:#ffaa55;padding:.15rem 0}
+.anomaly-list li::before{content:"⚠ ";opacity:.7}
+
+/* ── Footer ── */
+footer{margin-top:4rem;padding-top:1.5rem;border-top:1px solid var(--border);
+  text-align:center;font-size:.78rem;color:var(--muted)}
+
+/* ── Collapse chevron ── */
+.chevron{transition:transform .2s;font-size:.75rem;color:var(--muted)}
+.chevron.open{transform:rotate(90deg)}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--surface)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+</style>
+</head>
+<body>
+<div class="page-wrap">
+
+{# ── HEADER ──────────────────────────────────────────────────────────────── #}
+<header>
+  <div class="logo">🐕</div>
+  <div>
+    <h1>WATCHDOG Security Advisory</h1>
+    <p>Autonomous Software Supply Chain Threat Intelligence Agent</p>
+    <div class="meta-bar">
+      <span><strong>Target:</strong> {{ target_path }}</span>
+      <span><strong>Scanned:</strong> {{ scan_timestamp }}</span>
+      {% if scan_duration_s %}<span><strong>Duration:</strong> {{ "%.1f"|format(scan_duration_s) }}s</span>{% endif %}
+      <span><strong>Correction cycles:</strong> {{ correction_count }}</span>
+    </div>
+  </div>
+</header>
+
+{# ── TABS ─────────────────────────────────────────────────────────────────── #}
+<div class="tabs">
+  <button class="tab-btn active" onclick="showTab('summary',this)">📊 Summary</button>
+  <button class="tab-btn"        onclick="showTab('findings',this)">🔍 Findings</button>
+  <button class="tab-btn"        onclick="showTab('patches',this)">🩹 Patches</button>
+  <button class="tab-btn"        onclick="showTab('raw',this)">📋 Raw Data</button>
+</div>
+
+{# ── TAB: SUMMARY ─────────────────────────────────────────────────────────── #}
+<div id="tab-summary" class="tab-pane active">
+
+  {# Risk counts #}
+  {% set crit  = threat_assessments | selectattr("risk_level","equalto","CRITICAL") | list %}
+  {% set high  = threat_assessments | selectattr("risk_level","equalto","HIGH")     | list %}
+  {% set med   = threat_assessments | selectattr("risk_level","equalto","MEDIUM")   | list %}
+  {% set low   = threat_assessments | selectattr("risk_level","equalto","LOW")      | list %}
+  {% set approved_cnt = verdicts | selectattr("approved","equalto",true) | list | length %}
+
+  {# Executive alert #}
+  {% if crit | length > 0 %}
+  <div class="alert critical">⛔ CRITICAL — {{ crit | length }} package(s) exhibit behavior consistent with an active supply chain attack. Immediate action required.</div>
+  {% elif high | length > 0 %}
+  <div class="alert high">🔴 HIGH — {{ high | length }} package(s) have high-severity findings requiring prompt remediation.</div>
+  {% elif med | length > 0 %}
+  <div class="alert medium">🟡 MEDIUM — {{ med | length }} package(s) have medium-severity findings. Review at your earliest convenience.</div>
+  {% else %}
+  <div class="alert clean">✅ CLEAN — No significant supply chain threats detected.</div>
+  {% endif %}
+
+  {# Summary cards #}
+  <div class="cards">
+    <div class="card{% if findings|length > 0 %} high{% endif %}">
+      <div class="val">{{ findings | length }}</div>
+      <div class="label">Total Findings</div>
+    </div>
+    <div class="card critical">
+      <div class="val">{{ crit | length }}</div>
+      <div class="label">Critical Risk</div>
+    </div>
+    <div class="card high">
+      <div class="val">{{ high | length }}</div>
+      <div class="label">High Risk</div>
+    </div>
+    <div class="card medium">
+      <div class="val">{{ med | length }}</div>
+      <div class="label">Medium Risk</div>
+    </div>
+    <div class="card info">
+      <div class="val">{{ patches | length }}</div>
+      <div class="label">Patches Generated</div>
+    </div>
+    {% if correction_count > 0 %}
+    <div class="card corrected">
+      <div class="val">{{ correction_count }}</div>
+      <div class="label">Correction Cycle{{ 's' if correction_count > 1 }}</div>
+    </div>
+    {% endif %}
+  </div>
+
+  {# Threat Assessment Table #}
+  {% if threat_assessments %}
+  <div class="section-title">Threat Assessment Overview</div>
+  <table>
+    <thead><tr>
+      <th>Package</th><th>Risk Level</th><th>Similarity</th>
+      <th>Closest Attack Pattern</th><th>Trust Score</th><th>Deeper?</th>
+    </tr></thead>
+    <tbody>
+    {% for ta in threat_assessments %}
+      {% set ts = trust_signals | selectattr("package_name","equalto",ta.package_name) | first | default(None) %}
+      <tr>
+        <td><code>{{ ta.package_name }}</code></td>
+        <td><span class="badge {{ ta.risk_level }}">{{ ta.risk_level }}</span></td>
+        <td>{% if ta.pattern_similarity_score %}{{ "%.3f"|format(ta.pattern_similarity_score) }}{% else %}—{% endif %}</td>
+        <td><small>{{ ta.closest_attack_pattern or "heuristic" }}</small></td>
+        <td>
+          {% if ts %}
+          <div style="display:flex;align-items:center;gap:.5rem">
+            <div class="trust-bar-wrap">
+              <div class="trust-bar" style="width:{{ (ts.trust_score * 100)|int }}%;background:{{'var(--critical)' if ts.trust_score < 0.3 else 'var(--high)' if ts.trust_score < 0.6 else 'var(--low)'}};"></div>
+            </div>
+            <small>{{ "%.2f"|format(ts.trust_score) }}</small>
+          </div>
+          {% else %}—{% endif %}
+        </td>
+        <td>{% if ta.requires_deeper_analysis %}<span style="color:#d2a8ff">⚑ yes</span>{% else %}<span style="color:var(--muted)">no</span>{% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
+  {# Verdict summary #}
+  {% if verdicts %}
+  <div class="section-title">Patch Review Summary</div>
+  <table>
+    <thead><tr><th>Package</th><th>Action</th><th>Verdict</th><th>Notes</th></tr></thead>
+    <tbody>
+    {% for v in verdicts %}
+      {% set patch = patches | selectattr("package_name","equalto",v.package_name) | first | default(None) %}
+      <tr>
+        <td><code>{{ v.package_name }}</code></td>
+        <td>{% if patch %}<span class="patch-action {{ 'action-remove' if patch.proposed_action=='remove_dependency' else 'action-patch' if patch.proposed_action=='apply_code_patch' else 'action-monitor' }}">{{ patch.proposed_action }}</span>{% else %}—{% endif %}</td>
+        <td><span class="badge {{ 'approved' if v.approved else 'rejected' }}">{{ '✓ APPROVED' if v.approved else '✗ REJECTED' }}</span></td>
+        <td><small style="color:var(--muted)">{{ v.feedback[:80] if v.feedback else '' }}</small></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
+  {% if correction_count > 0 %}
+  <div class="correction-notice">
+    <span class="icon">🔄</span>
+    <strong>Self-Correction Loop:</strong> The Reviewer Agent rejected {{ correction_count }} patch(es) on the first pass.
+    The Patch Writer re-generated corrected versions which were subsequently approved.
+    Total correction cycles: <strong>{{ correction_count }}</strong>.
+  </div>
+  {% endif %}
+</div>{# /tab-summary #}
+
+{# ── TAB: FINDINGS ────────────────────────────────────────────────────────── #}
+<div id="tab-findings" class="tab-pane">
+  <div class="section-title">Security Findings ({{ findings | length }})</div>
+
+  {% for finding in findings %}
+  {% set ta = threat_assessments | selectattr("package_name","equalto",finding.package_name) | first | default(None) %}
+  {% set ts = trust_signals      | selectattr("package_name","equalto",finding.package_name) | first | default(None) %}
+  {% set fp = fingerprints       | selectattr("package_name","equalto",finding.package_name) | first | default(None) %}
+  {% set risk = ta.risk_level if ta else "LOW" %}
+
+  <div class="finding">
+    <div class="finding-header" onclick="toggleFinding(this)">
+      <div class="finding-number">{{ loop.index }}</div>
+      <span class="badge {{ risk }}">{{ risk }}</span>
+      <div class="finding-title">
+        {{ finding.finding_type | replace('_',' ') | title }}
+        <span style="color:var(--muted);font-weight:400"> in </span>
+        <code>{{ finding.package_name }}</code>
+      </div>
+      <div class="finding-file">{{ finding.file_path | replace('/home/claude/watchdog/', '') }}:{{ finding.line_number }}</div>
+      <span class="chevron">▶</span>
+    </div>
+
+    <div class="finding-body">
+      {# Info grid #}
+      <div class="info-grid" style="margin-bottom:1rem">
+        <div class="info-box">
+          <div class="label">Finding Type</div>
+          <div class="val">{{ finding.finding_type | replace('_',' ') | title }}</div>
+        </div>
+        <div class="info-box">
+          <div class="label">Severity</div>
+          <div class="val"><span class="badge {{ finding.severity }}">{{ finding.severity }}</span></div>
+        </div>
+        <div class="info-box">
+          <div class="label">Description</div>
+          <div class="val" style="font-size:.84rem">{{ finding.description }}</div>
+        </div>
+        <div class="info-box">
+          <div class="label">Location</div>
+          <div class="val"><code style="font-size:.82rem">{{ finding.file_path | replace('/home/claude/watchdog/', '') }}:{{ finding.line_number }}</code></div>
+        </div>
+      </div>
+
+      {# Code snippet #}
+      {% if finding.code_snippet %}
+      <div style="margin-bottom:.8rem">
+        <div style="font-size:.8rem;color:var(--muted);margin-bottom:.3rem">📍 Code Snippet</div>
+        <div class="code-block"><pre>{{ finding.code_snippet }}</pre></div>
+      </div>
+      {% endif %}
+
+      {# Threat Assessment #}
+      {% if ta %}
+      <div class="threat-block {{ ta.risk_level }}" style="margin-bottom:.8rem">
+        <div style="font-size:.8rem;color:var(--muted);margin-bottom:.5rem">🎯 Threat Assessment</div>
+        <div style="display:flex;align-items:center;gap:.8rem;margin-bottom:.5rem">
+          <span class="badge {{ ta.risk_level }}">{{ ta.risk_level }}</span>
+          {% if ta.closest_attack_pattern %}<span style="font-size:.85rem">matched: <strong>{{ ta.closest_attack_pattern }}</strong></span>{% endif %}
+          {% if ta.pattern_similarity_score %}<span style="font-size:.8rem;color:var(--muted)">similarity: {{ "%.3f"|format(ta.pattern_similarity_score) }}</span>{% endif %}
+          {% if ta.requires_deeper_analysis %}<span style="color:#d2a8ff;font-size:.8rem">⚑ flagged for deeper analysis</span>{% endif %}
+        </div>
+        <div style="font-size:.83rem;color:var(--muted)">{{ ta.final_reasoning }}</div>
+      </div>
+      {% endif %}
+
+      {# Capability fingerprint #}
+      {% if fp %}
+      <div style="margin-bottom:.8rem">
+        <div style="font-size:.8rem;color:var(--muted);margin-bottom:.4rem">🔬 Capability Fingerprint</div>
+        <div class="flags">
+          <span class="flag {{ 'on' if fp.network_calls else 'off' }}">Network</span>
+          <span class="flag {{ 'on' if fp.subprocess_calls else 'off' }}">Subprocess</span>
+          <span class="flag {{ 'on' if fp.base64_encoded_payloads else 'off' }}">Base64</span>
+          <span class="flag {{ 'on' if fp.env_variable_access else 'off' }}">Env Access</span>
+          <span class="flag {{ 'on' if fp.filesystem_writes else 'off' }}">FS Writes</span>
+          <span class="flag {{ 'on' if fp.install_hook_modified else 'off' }}">Install Hook</span>
+        </div>
+      </div>
+      {% endif %}
+
+      {# Trust signal #}
+      {% if ts %}
+      <div class="info-box" style="margin-bottom:.8rem">
+        <div class="label">🔑 Maintainer Trust</div>
+        <div style="display:flex;align-items:center;gap:1rem;margin:.4rem 0">
+          <div class="trust-bar-wrap" style="width:160px">
+            <div class="trust-bar" style="width:{{ (ts.trust_score * 100)|int }}%;background:{{'var(--critical)' if ts.trust_score < 0.3 else 'var(--high)' if ts.trust_score < 0.6 else 'var(--low)'}};"></div>
+          </div>
+          <span style="font-weight:700;color:{{'var(--critical)' if ts.trust_score < 0.3 else 'var(--high)' if ts.trust_score < 0.6 else 'var(--low)'}}">{{ "%.2f"|format(ts.trust_score) }}</span>
+          {% if ts.maintainer_username %}<span style="color:var(--muted);font-size:.84rem">{{ ts.maintainer_username }}</span>{% endif %}
+          {% if ts.account_age_days %}<span style="color:var(--muted);font-size:.84rem">{{ ts.account_age_days }}d old account</span>{% endif %}
+          {% if ts.commit_count %}<span style="color:var(--muted);font-size:.84rem">{{ ts.commit_count }} commit(s)</span>{% endif %}
+        </div>
+        {% if ts.anomalies %}
+        <ul class="anomaly-list">
+          {% for a in ts.anomalies[:4] %}<li>{{ a }}</li>{% endfor %}
+        </ul>
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>{# /tab-findings #}
+
+{# ── TAB: PATCHES ─────────────────────────────────────────────────────────── #}
+<div id="tab-patches" class="tab-pane">
+  <div class="section-title">Remediation Proposals ({{ patches | length }})</div>
+
+  {% for patch in patches %}
+  {% set verdict = verdicts | selectattr("package_name","equalto",patch.package_name) | first | default(None) %}
+  {% set was_rejected = mandates | selectattr("package_name","equalto",patch.package_name) | list | length > 0 %}
+
+  <div class="finding">
+    <div class="finding-header" onclick="toggleFinding(this)">
+      <div class="finding-number">{{ loop.index }}</div>
+      {% if verdict %}
+        <span class="badge {{ 'approved' if verdict.approved else 'rejected' }}">{{ '✓ APPROVED' if verdict.approved else '✗ REJECTED' }}</span>
+      {% endif %}
+      {% if was_rejected and verdict and verdict.approved %}
+        <span class="badge corrected">🔄 CORRECTED</span>
+      {% endif %}
+      <div class="finding-title"><code>{{ patch.package_name }}</code></div>
+      <span class="patch-action {{ 'action-remove' if patch.proposed_action=='remove_dependency' else 'action-patch' if patch.proposed_action=='apply_code_patch' else 'action-monitor' }}">
+        {{ patch.proposed_action | replace('_',' ') }}
+      </span>
+      <span style="font-size:.8rem;color:var(--muted)">{{ (patch.confidence * 100)|int }}% confidence</span>
+      <span class="chevron">▶</span>
+    </div>
+
+    <div class="finding-body{{ ' corrected-finding' if was_rejected and verdict and verdict.approved else '' }}">
+      {% if was_rejected and verdict and verdict.approved %}
+      <div class="correction-notice">
+        <span class="icon">🔄</span>
+        <strong>Self-Correction Applied:</strong> This patch was initially rejected by the Reviewer Agent
+        and re-generated with corrections. The final version shown here was approved after {{ correction_count }} correction cycle(s).
+      </div>
+      {% endif %}
+
+      <div class="patch-block">
+        <div style="font-size:.8rem;color:var(--muted);margin-bottom:.5rem">📝 Rationale</div>
+        <div style="font-size:.88rem">{{ patch.rationale }}</div>
+      </div>
+
+      {% if patch.proposed_action == 'apply_code_patch' and patch.patch_diff %}
+      <div style="font-size:.8rem;color:var(--muted);margin:.8rem 0 .4rem">📦 Patch Diff</div>
+      <div class="code-block"><pre>{{ patch.patch_diff }}</pre></div>
+      {% endif %}
+
+      {% if patch.proposed_action == 'remove_dependency' %}
+      <div class="alert critical" style="margin:.8rem 0;font-size:.88rem">
+        ⛔ <strong>Remove this dependency immediately.</strong>
+        Do not use <code>{{ patch.package_name }}</code> in any environment.
+        Audit all systems that may have already installed it.
+      </div>
+      {% elif patch.proposed_action == 'pin_version' and patch.safe_version %}
+      <div class="code-block" style="margin:.8rem 0"><pre># requirements.txt / pyproject.toml
+{{ patch.package_name }}=={{ patch.safe_version }}</pre></div>
+      {% elif patch.proposed_action == 'monitor_only' %}
+      <div class="alert low" style="margin:.8rem 0;font-size:.88rem">
+        👀 <strong>Monitor only.</strong> No immediate code change required.
+        Re-scan after next package release.
+      </div>
+      {% endif %}
+
+      {% if verdict and not verdict.approved and verdict.feedback %}
+      <div class="correction-notice" style="border-color:var(--critical);background:#2d1616;color:#ff8888">
+        <span class="icon">✗</span>
+        <strong>Rejection Reason:</strong> {{ verdict.feedback }}
+      </div>
+      {% endif %}
+
+      {% for mandate in mandates %}
+        {% if mandate.package_name == patch.package_name %}
+        <div class="correction-notice">
+          <strong>🔄 Correction Mandate Issued:</strong>
+          <ul style="margin:.4rem 0 0 1.2rem;font-size:.85rem">
+            {% for instr in mandate.correction_instructions[:3] %}
+            <li>{{ instr }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+</div>{# /tab-patches #}
+
+{# ── TAB: RAW DATA ────────────────────────────────────────────────────────── #}
+<div id="tab-raw" class="tab-pane">
+  <div class="section-title">Raw Pipeline Data</div>
+  <p style="color:var(--muted);font-size:.88rem;margin-bottom:1rem">
+    Full machine-readable data produced by each agent in the pipeline.
+    Useful for integration, debugging, and audit trails.
+  </p>
+
+  <details style="margin-bottom:1rem">
+    <summary style="cursor:pointer;color:var(--accent);padding:.4rem 0">▶ Trust Signals ({{ trust_signals | length }})</summary>
+    <div class="code-block" style="margin-top:.5rem"><pre>{% for ts in trust_signals %}{{ ts.package_name }}: score={{ "%.2f"|format(ts.trust_score) }}  maintainer={{ ts.maintainer_username or '?' }}  age={{ ts.account_age_days or '?' }}d  commits={{ ts.commit_count or '?' }}
+  anomalies: {{ ts.anomalies | join('; ') if ts.anomalies else 'none' }}
+  reasoning: {{ ts.reasoning[:120] }}
+{% endfor %}</pre></div>
+  </details>
+
+  <details style="margin-bottom:1rem">
+    <summary style="cursor:pointer;color:var(--accent);padding:.4rem 0">▶ Capability Fingerprints ({{ fingerprints | length }})</summary>
+    <div class="code-block" style="margin-top:.5rem"><pre>{% for fp in fingerprints %}{{ fp.package_name }}:
+  network={{ fp.network_calls }}  subprocess={{ fp.subprocess_calls }}  base64={{ fp.base64_encoded_payloads }}
+  env={{ fp.env_variable_access }}  filesystem={{ fp.filesystem_writes }}  install_hook={{ fp.install_hook_modified }}
+  text: {{ fp.fingerprint_text[:160] }}
+{% endfor %}</pre></div>
+  </details>
+
+  <details style="margin-bottom:1rem">
+    <summary style="cursor:pointer;color:var(--accent);padding:.4rem 0">▶ Threat Assessments ({{ threat_assessments | length }})</summary>
+    <div class="code-block" style="margin-top:.5rem"><pre>{% for ta in threat_assessments %}{{ ta.package_name }}: {{ ta.risk_level }}  sim={{ ta.pattern_similarity_score }}  deeper={{ ta.requires_deeper_analysis }}
+  pattern: {{ ta.closest_attack_pattern or 'none' }}
+  reasoning: {{ ta.final_reasoning[:200] }}
+{% endfor %}</pre></div>
+  </details>
+
+  <details>
+    <summary style="cursor:pointer;color:var(--accent);padding:.4rem 0">▶ Markdown Report Source</summary>
+    <div class="code-block" style="margin-top:.5rem"><pre>{{ final_report_md | e }}</pre></div>
+  </details>
+</div>{# /tab-raw #}
+
+{# ── FOOTER ───────────────────────────────────────────────────────────────── #}
+<footer>
+  Generated by <strong>WATCHDOG v1.0</strong> · Autonomous Supply Chain Threat Intelligence ·
+  <a href="https://github.com/your-org/watchdog">github.com/your-org/watchdog</a>
+</footer>
+</div>{# /page-wrap #}
+
+<script>
+function showTab(id, btn) {
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  btn.classList.add('active');
+}
+function toggleFinding(header) {
+  const body = header.nextElementSibling;
+  const chev = header.querySelector('.chevron');
+  const isOpen = body.classList.toggle('open');
+  if (chev) chev.classList.toggle('open', isOpen);
+}
+// Auto-open first finding in each tab on load
+document.querySelectorAll('.finding').forEach((card, i) => {
+  if (i === 0) {
+    const body = card.querySelector('.finding-body');
+    const chev = card.querySelector('.chevron');
+    if (body) body.classList.add('open');
+    if (chev) chev.classList.add('open');
+  }
+});
+</script>
+</body>
+</html>

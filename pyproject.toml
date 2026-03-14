@@ -1,6 +1,6 @@
 [build-system]
-requires = ["setuptools>=68", "wheel"]
-build-backend = "setuptools.backends.legacy:build"
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "watchdog"
@@ -76,9 +76,8 @@ watchdog-seed = "data.seed_chromadb:seed_chromadb"
 where = ["."]
 exclude = ["tests*", "vuln_app*", "scripts*"]
 
-# ── uv (fast package manager — drop-in pip replacement) ─────────────────────
-[tool.uv]
-dev-dependencies = [
+[dependency-groups]
+dev = [
   "pytest>=8.0.0",
   "pytest-asyncio>=0.23.0",
   "ruff>=0.4.0",
