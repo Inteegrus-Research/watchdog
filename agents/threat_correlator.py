@@ -288,10 +288,10 @@ def assess_package(
     # Apply trust‑score adjustment
     final_risk = _adjust_for_trust(base_risk, trust.trust_score)
 
-    # ── EXTRA RULE: extremely low trust + suspicious capabilities → CRITICAL ──
-    if trust.trust_score < 0.1 and (fp.network_calls or fp.base64_encoded_payloads or fp.subprocess_calls):
+    # ── EXTRA RULE: low trust + suspicious capabilities → CRITICAL ──
+    if trust.trust_score < 0.3 and (fp.network_calls or fp.base64_encoded_payloads or fp.subprocess_calls):
         if final_risk != "CRITICAL":
-            _log(f"    Extremely low trust + suspicious capabilities → forcing CRITICAL")
+            _log(f"    Low trust ({trust.trust_score:.2f}) + suspicious capabilities → forcing CRITICAL")
             final_risk = "CRITICAL"
     # ───────────────────────────────────────────────────────────────────────────
 

@@ -64,30 +64,30 @@ Target codebase
 └──────┬──────┘  → List[FindingRecord]
        │
        ▼
-┌──────────────────┐     ┌──────────────────┐
+┌──────────────────┐     ┌───────────────────┐
 │  A2 Code Analyst │     │  A3 Trust Analyst │
 │  CapabilityFP    │     │  Maintainer trust │  (run in parallel)
 └──────┬───────────┘     └────────┬──────────┘
        └──────────┬───────────────┘
                   ▼
-       ┌──────────────────────┐
-       │  A4 Threat Correlator│  ChromaDB semantic search
+       ┌───────────────────────┐
+       │  A4 Threat Correlator │  ChromaDB semantic search
        │  vs historical attacks│  + trust-score adjustment
-       └──────────┬───────────┘
+       └──────────┬────────────┘
                   ▼
        ┌──────────────────────┐
-       │  A5 Patch Writer     │  Rule-based fix generation
+       │    A5 Patch Writer   │  Rule-based fix generation
        └──────────┬───────────┘
                   ▼
-       ┌──────────────────────┐
-       │  A6 Reviewer (Critic)│  Deterministic rules + LLM adversarial review
-       └──────────┬───────────┘
+       ┌───────────────────────┐
+       │  A6 Reviewer (Critic) │  Deterministic rules + LLM adversarial review
+       └──────────┬────────────┘
                   │
-         ┌────────┴────────────────┐
-         │ Rejected & retries left?│
-         │    YES → A5 (retry)     │  ← self-correction loop
-         │    NO  → A7             │
-         └─────────────────────────┘
+       ┌──────────┴──────────────┐
+       │ Rejected & retries left?│
+       │    YES → A5 (retry)     │  ← self-correction loop
+       │    NO  → A7             │
+       └─────────────────────────┘
                   ▼
        ┌──────────────────────┐
        │  A7 Report Generator │  Jinja2 HTML + Markdown advisory
@@ -168,6 +168,9 @@ uv sync
 # With optional dev tools
 uv sync --extra dev
 
+# For vuln-app execution
+uv sync --extra vuln-app
+
 source .venv/bin/activate
 ```
 
@@ -223,9 +226,6 @@ python scripts/test_pipeline.py --target vuln_app/ --loop
 
 # Verbose: dump full state JSON
 python scripts/test_pipeline.py --target vuln_app/ --verbose
-
-# Scan a different target
-python scripts/test_pipeline.py --target /path/to/your/project
 ```
 
 ### Individual agents
@@ -351,12 +351,12 @@ After scanning `vuln_app/`, WATCHDOG produces:
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │ 🔴 CRITICAL — computil  sim=0.65  trust=0.00  → remove      │
-│ 🟠 HIGH     — vuln_app  (SQLi, IDOR, hardcoded secret)       │
-│                                                              │
-│ Patches: 4 generated, 3 approved first pass, 1 corrected    │
-│ Correction cycle: IDOR patch missing @login_required         │
-│ After correction: all 4 patches approved                     │
-└─────────────────────────────────────────────────────────────│
+│ 🟠 HIGH     — vuln_app  (SQLi, IDOR, hardcodedsecret)       │
+│                                                             │
+│ Patch s: 4 generated, 3 approved first pass, 1 correctd     │
+│ Correction cycle: IDOR patch missing login_required         │
+│ After correction: all 4 patchesapproved                     │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 The full HTML report is saved to `watchdog_report.html` and `reports/<timestamp>/watchdog_report.html`.
