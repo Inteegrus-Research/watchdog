@@ -1,15 +1,18 @@
+
 <div align="center">
 
 # 🐕 WATCHDOG
 
 ### Autonomous Software Supply Chain Threat Intelligence Agent
 
-*Detects zero-day supply chain attacks before any CVE exists*
+*Detects zero‑day supply chain attacks before any CVE exists — at the moment a malicious package version lands in a registry.*
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://python.org)
 [![LangGraph](https://img.shields.io/badge/LangGraph-multi--agent-green.svg)](https://langchain-ai.github.io/langgraph/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Hackathon: IIT Bombay Hack & Break](https://img.shields.io/badge/hackathon-IIT%20Bombay-red.svg)](#)
+[![Hackathon: IIT Bombay Hack & Break](https://img.shields.io/badge/hackathon-IIT%20Bombay-red.svg)](https://unstop.com/hackathons/hack-break-generative-ai-cybersecurity-innovation-challenge-indian-institute-of-technology-iit-bombai-1656605)
+
+**[GitHub Repository](https://github.com/Inteegrus-Research/watchdog)** · **[Demo Video](#)** · **[Slides](#)**
 
 </div>
 
@@ -17,43 +20,52 @@
 
 ## Table of Contents
 
-1. [Overview](#overview)
-2. [Architecture](#architecture)
-3. [Self-Correction Loop](#self-correction-loop)
-4. [Quick Start](#quick-start)
-5. [Installation](#installation)
-6. [Usage](#usage)
-7. [Project Structure](#project-structure)
-8. [Demo App](#demo-app)
-9. [Example Output](#example-output)
-10. [Technology Stack](#technology-stack)
-11. [Acknowledgments](#acknowledgments)
+- [Overview](#overview)
+- [Why WATCHDOG?](#why-watchdog)
+- [Architecture](#architecture)
+- [Self‑Correction Loop](#self‑correction-loop)
+- [Quick Start](#quick-start)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Project Structure](#project-structure)
+- [Demo Application](#demo-application)
+- [Example Output](#example-output)
+- [Technology Stack](#technology-stack)
+- [Innovation & Impact](#innovation--impact)
+- [Team](#team)
+- [License](#license)
 
 ---
 
 ## Overview
 
-WATCHDOG is a **multi-agent AI system** that detects zero-day software supply chain attacks
-*before any CVE is published* — at the moment a malicious package version lands in a registry.
+**WATCHDOG** is a multi‑agent AI system that detects **zero‑day software supply chain attacks** *before* any CVE is published. It does not rely on vulnerability databases (like Snyk or Dependabot), but instead asks:
 
-Traditional tools (Snyk, Dependabot, OSV) are reactive: they alert only after a vulnerability
-has been reported, catalogued, and assigned a CVE. The XZ Utils 2024 backdoor (CVE-2024-3094)
-evaded all scanners for weeks after being live. **WATCHDOG fills this gap.**
+> *“Does this package behave like a previous supply chain attack?”*
 
-### How it works
+By analysing **code capabilities**, **maintainer provenance**, and performing **semantic similarity search** against a knowledge base of historical attacks (XZ Utils, PyTorch‑nightly, SolarWinds, …), WATCHDOG identifies malicious updates at the moment they appear — even when no signature exists.
 
-Instead of matching against known vulnerability databases, WATCHDOG asks:
-*"Does this package behave like a previous supply chain attack?"*
+Its **adversarial self‑correction loop** then automatically generates, reviews, and refines secure patches, mimicking a human security engineer. All processing runs **fully offline**, using open‑source tools, and delivers a professional HTML security advisory.
 
-It analyses **code capabilities** (new network calls, base64 payloads, subprocess execution),
-**maintainer provenance** (account age, commit history, suspicious takeovers), and performs
-**semantic similarity search** against a knowledge base of historical attacks (XZ Utils, PyTorch
-dependency confusion, and others). An adversarial Reviewer Agent then checks every proposed
-fix — and if it finds a deficiency, the system self-corrects without human intervention.
+---
+
+## Why WATCHDOG?
+
+| Existing tools (Snyk, Dependabot, OSV) | WATCHDOG |
+|----------------------------------------|----------|
+| Reactive – alert after CVE is published | **Proactive** – detect before any CVE |
+| Match against known vulnerability databases | **Behavioural analysis** – compare against attack patterns |
+| No context about maintainer trust | **Trust scoring** – account age, commit history, anomalies |
+| No automatic patching | **Self‑correcting patch generation** with adversarial review |
+| Cloud‑dependent, data leaves your machine | **Fully offline**, 100% open‑source |
+
+**The XZ Utils 2024 backdoor** (CVE‑2024‑3094) would have been detected by WATCHDOG *immediately* after the malicious version was uploaded, because its behavioural fingerprint matched the XZ attack pattern in our knowledge base.
 
 ---
 
 ## Architecture
+
+WATCHDOG orchestrates **seven specialised agents** via a LangGraph state machine. Every agent reads from and writes back to a shared `WatchdogState` (TypedDict), enabling a clean self‑correction loop.
 
 ```
 Target codebase
@@ -71,12 +83,12 @@ Target codebase
        └──────────┬───────────────┘
                   ▼
        ┌───────────────────────┐
-       │  A4 Threat Correlator │  ChromaDB semantic search
-       │  vs historical attacks│  + trust-score adjustment
+       │  A4 Threat Correlator │  ChromaDB semantic search vs. historical attacks
+       │                       │  + trust‑score adjustment → risk level
        └──────────┬────────────┘
                   ▼
        ┌──────────────────────┐
-       │    A5 Patch Writer   │  Rule-based fix generation
+       │    A5 Patch Writer   │  Rule‑based fix generation
        └──────────┬───────────┘
                   ▼
        ┌───────────────────────┐
@@ -85,7 +97,7 @@ Target codebase
                   │
        ┌──────────┴──────────────┐
        │ Rejected & retries left?│
-       │    YES → A5 (retry)     │  ← self-correction loop
+       │    YES → A5 (retry)     │  ← self‑correction loop
        │    NO  → A7             │
        └─────────────────────────┘
                   ▼
@@ -94,53 +106,47 @@ Target codebase
        └──────────────────────┘
 ```
 
-All agents share a **LangGraph TypedDict state** — every node reads from and writes back to
-the same state, enabling the conditional self-correction loop to operate cleanly.
+**LangGraph** provides the conditional edge that routes rejected patches back to the Patch Writer (max 2 cycles).
 
 ---
 
-## Self-Correction Loop
+## Self‑Correction Loop
 
-WATCHDOG's signature feature is its **adversarial self-correction loop**:
+The **signature feature** of WATCHDOG is its adversarial review cycle:
 
-1. The **Reviewer Agent** runs two layers of checks on every patch:
-   - **Deterministic rules** (always, fast): parameterised SQL check, `@login_required` check,
-     env-var secret check, syntax validation
-   - **LLM adversarial review** (optional, Ollama): red-team "find anything wrong" prompt
+1. **A6 Reviewer** runs two layers of checks on every patch:
+   - **Deterministic rules** (always, fast): parameterised SQL check, `@login_required` check, env‑var secret check, syntax validation.
+   - **LLM adversarial review** (optional, using Ollama): a red‑team prompt that says *“find any problem with this patch”*.
+2. If a check fails, the Reviewer emits a `CorrectionMandate` with specific instructions (e.g., *“Add @login_required decorator to the route”*).
+3. The graph routes back to the **Patch Writer**, which reads the mandate and regenerates the patch accordingly.
+4. This repeats up to **2 times** before escalating to the human.
 
-2. If a patch fails, the Reviewer emits a `CorrectionMandate` with specific instructions.
-
-3. The graph routes back to the Patch Writer, which reads the mandate and re-generates.
-
-4. This repeats up to **`MAX_CORRECTION_CYCLES = 2`** times.
-
-**Demo:** The IDOR patch is intentionally generated without `@login_required` on pass 1.
-The Reviewer catches this, issues a mandate, and the corrected patch (with the decorator)
-is approved on pass 2. The HTML report highlights the correction in purple.
+**Demo moment:** The IDOR patch is deliberately generated without `@login_required` on the first pass. The Reviewer catches this, issues a mandate, and the corrected patch (with the decorator) is approved on the second pass. The HTML report highlights the correction in a purple badge — a clear, live demonstration of AI self‑correction.
 
 ---
 
 ## Quick Start
 
 ```bash
-# 1. Clone and set up
-git clone https://github.com/your-org/watchdog.git
+# 1. Clone the repository
+git clone https://github.com/Inteegrus-Research/watchdog.git
 cd watchdog
-pip install -e ".[dev]"
 
-# 2. Seed the ChromaDB attack-pattern knowledge base
+# 2. Install dependencies (using uv recommended)
+pip install uv
+uv sync
+source .venv/bin/activate   # or `uv shell`
+
+# 3. Seed the ChromaDB attack‑pattern knowledge base
 python data/seed_chromadb.py
 
-# 3. (Optional) Pull LLM models for enrichment
+# 4. (Optional) Pull LLM models for enriched analysis
 ollama pull mistral
 
-# 4. Launch the Web UI
+# 5. Run the web UI
 python webui/app.py
-# → Open http://localhost:7860
-# → Enter "vuln_app/" → Click "Run WATCHDOG Scan"
-
-# 5. Or run headless
-python scripts/test_pipeline.py --target vuln_app/
+# Open http://localhost:7860
+# Enter "vuln_app/" and click "Run WATCHDOG Scan"
 ```
 
 ---
@@ -159,43 +165,32 @@ python scripts/test_pipeline.py --target vuln_app/
 ### Using `uv` (recommended)
 
 ```bash
-# Install uv if not already installed
-curl -Lsf https://astral.sh/uv/install.sh | sh
-
-# Sync all dependencies
+pip install uv
 uv sync
-
-# With optional dev tools
-uv sync --extra dev
-
-# For vuln-app execution
-uv sync --extra vuln-app
-
-source .venv/bin/activate
+source .venv/bin/activate   # Linux/macOS
+# or .venv\Scripts\activate  (Windows)
 ```
 
 ### Using `pip`
 
 ```bash
 python -m venv .venv
-source .venv/bin/activate   # Windows: .venv\Scripts\activate
+source .venv/bin/activate
 pip install -e .
 ```
 
 ### Ollama setup (for LLM enrichment)
 
 ```bash
-# Install Ollama from https://ollama.ai
-ollama serve &               # start the Ollama daemon
-ollama pull mistral          # Trust Analyst + Reviewer
+ollama serve &               # start the daemon
+ollama pull mistral          # used by Trust Analyst + Reviewer
 ```
 
 ### Seed the knowledge base
 
 ```bash
 python data/seed_chromadb.py
-# Seeded 2 attack patterns: XZ Utils 2024, PyTorch-nightly 2022
-# Run a smoke-test query...
+# Seeded 2 attack patterns: XZ Utils 2024, PyTorch‑nightly 2022
 # ChromaDB ready at chroma_db/
 ```
 
@@ -203,59 +198,44 @@ python data/seed_chromadb.py
 
 ## Usage
 
-### Web UI
+### Web UI (easiest for demos)
 
 ```bash
 python webui/app.py
+# Open http://localhost:7860
+# Enter target path (e.g., "vuln_app/")
+# Toggle "Use LLM enrichment" (slower but more insightful)
+# Click "Run WATCHDOG Scan"
+# The report appears in the Report tab with a download button.
 ```
 
-Open **http://localhost:7860**. Enter a target path, toggle LLM enrichment, click **Run**.
-The report appears in the **Report** tab with a download button.
-
-### Headless pipeline
+### Headless pipeline (for CI/CD or testing)
 
 ```bash
-# Basic scan (rule-based, no LLM)
+# Basic scan (rule‑based, no LLM)
 python scripts/test_pipeline.py --target vuln_app/
 
-# With Ollama LLM enrichment
+# With LLM enrichment
 python scripts/test_pipeline.py --target vuln_app/ --llm
 
-# Show self-correction loop details
+# Show self‑correction loop details
 python scripts/test_pipeline.py --target vuln_app/ --loop
 
-# Verbose: dump full state JSON
+# Verbose – dump full state JSON
 python scripts/test_pipeline.py --target vuln_app/ --verbose
 ```
 
-### Individual agents
+### Run individual agents
 
 ```bash
-# Run only the scanner
+# Scanner only
 python agents/scanner.py vuln_app/
 
-# Run code analyst on scanner output
+# Code analyst only (requires scanner output in state, but can be tested standalone)
 python agents/code_analyst.py vuln_app/
 
-# Run full reporter standalone
+# Full reporter standalone (generates watchdog_report.html)
 python agents/reporter.py vuln_app/
-# → generates watchdog_report.html
-```
-
-### Expected output
-
-```
-[scanner]         Starting scan — target: '.../vuln_app'
-[scanner]         Scan complete — 4 finding(s) retained, 1 skipped (test files)
-[code_analyst]    computil  [network, subprocess, base64, env_access]  ← __init__.py
-[trust_analyst]   computil: score=0.00  risk=CRITICAL  anomalies=10
-[threat_correlator] computil: CRITICAL  sim=0.650  deeper=True
-[patch_writer]    IDOR — Pass 1: ownership check added, @login_required OMITTED
-[reviewer]        ✗ REJECTED: IDOR patch is INCOMPLETE: @login_required missing
-[router]          ↩ Routing to patch_writer (cycle 1/2)
-[patch_writer]    IDOR — applying corrected patch
-[reviewer]        ✅ APPROVED: vuln_app
-[reporter]        Report saved: reports/20250101_120000/watchdog_report.html
 ```
 
 ---
@@ -265,101 +245,99 @@ python agents/reporter.py vuln_app/
 ```
 watchdog/
 ├── agents/                   # Agent implementations (one file per agent)
-│   ├── scanner.py            # A1: Bandit + AST analysis
-│   ├── code_analyst.py       # A2: CapabilityFingerprint builder
-│   ├── trust_analyst.py      # A3: Maintainer provenance scoring
-│   ├── threat_correlator.py  # A4: ChromaDB semantic similarity
-│   ├── patch_writer.py       # A5: Rule-based patch generation
-│   ├── reviewer.py           # A6: Deterministic + LLM adversarial review
-│   └── reporter.py           # A7: Jinja2 HTML/Markdown report
-│
+│   ├── scanner.py
+│   ├── code_analyst.py
+│   ├── trust_analyst.py
+│   ├── threat_correlator.py
+│   ├── patch_writer.py
+│   ├── reviewer.py
+│   └── reporter.py
 ├── workflow/
 │   ├── graph.py              # LangGraph StateGraph assembly
 │   └── state.py              # WatchdogState TypedDict
-│
 ├── schemas/
 │   └── models.py             # Pydantic v2 data models (8 classes)
-│
 ├── utils/
 │   ├── ast_extractor.py      # AST capability visitor
 │   ├── chroma_utils.py       # ChromaDB collection helpers
 │   └── file_utils.py         # Path helpers
-│
 ├── templates/
-│   ├── report.html.j2        # Dark-mode HTML report template
+│   ├── report.html.j2        # Dark‑mode HTML report template
 │   └── report.md.j2          # Markdown report template
-│
 ├── data/
 │   ├── attack_patterns/      # Historical attack fingerprints
 │   │   ├── xz_utils_2024.txt
 │   │   └── pytorch_2022.txt
 │   ├── metadata/
 │   │   └── maintainer_fake.json  # Demo maintainer data
-│   └── seed_chromadb.py      # One-time ChromaDB seeder
-│
+│   └── seed_chromadb.py      # One‑time ChromaDB seeder
 ├── vuln_app/                 # Demo vulnerable Flask app
-│   ├── app.py                # SQLi (B608), IDOR, hardcoded secret
-│   ├── test_auth.py          # Decoy with credentials (filtered by scanner)
+│   ├── app.py                # SQLi, IDOR, hardcoded secret
+│   ├── test_auth.py          # Decoy (filtered by scanner)
 │   └── computil/
 │       └── __init__.py       # Simulated backdoor package
-│
 ├── webui/
 │   └── app.py                # Gradio web interface
-│
 ├── scripts/
-│   ├── test_pipeline.py      # End-to-end headless test
-│   └── run_demo.sh           # Full setup + smoke test script
-│
-├── slides/
-│   └── slides_outline.md     # 10-slide presentation outline
-│
-├── chroma_db/                # ChromaDB storage (created by seed script)
-├── reports/                  # Generated reports (timestamped)
-├── watchdog_report.html      # Latest report (symlink / copy)
+│   └── test_pipeline.py      # End‑to‑end headless testscript
+├── chroma_db/                 # ChromaDB storage (created by seed script)
+├── reports/                   # Generated reports (timestamped)
+├── watchdog_report.html       # Latest report (symlink / copy)
 ├── pyproject.toml
+├── WATCHDOG.pptx
 └── README.md
 ```
 
 ---
 
-## Demo App
+## Demo Application
 
 The `vuln_app/` directory contains a deliberately vulnerable Flask application with:
 
-| # | Vulnerability | Type | Location |
-|---|--------------|------|----------|
-| 1 | SQL Injection | `sql_injection` | `app.py:83` — string concatenation in login query |
-| 2 | IDOR | `idor` | `app.py:113` — no ownership check in delete endpoint |
-| 3 | Hardcoded Secret | `hardcoded_secret` | `app.py:24` — Flask secret key in source |
-| 4 | Backdoor | `network_call` + `base64_payload` | `computil/__init__.py` — socket + base64 at import time |
+| # | Vulnerability | Type | Location | Description |
+|---|--------------|------|----------|-------------|
+| 1 | SQL Injection | `sql_injection` | `app.py:83` | String concatenation in login query |
+| 2 | IDOR | `idor` | `app.py:113` | No ownership check in delete endpoint |
+| 3 | Hardcoded Secret | `hardcoded_secret` | `app.py:24` | Flask secret key in source |
+| 4 | Backdoor | `network_call` + `base64_payload` | `computil/__init__.py` | Socket + base64 at import time (mimics XZ Utils) |
 
-The `computil` package mimics the XZ Utils 2024 attack pattern:
-new maintainer (22-day-old account, 1 commit), socket connection, base64 payload, `os.environ` access.
+The `computil` package is designed to resemble the XZ Utils 2024 attack:
+- New maintainer: 22‑day‑old account, 1 commit
+- Behaviour: network socket, base64 decoding, `os.environ` access
+- Trust score: **0.00** → CRITICAL
 
+**To run the demo app separately:**
 ```bash
-# Run the demo app (separate terminal)
-cd vuln_app && pip install flask && python app.py
-# → http://localhost:5001
+uv sync --extra vuln-app
+cd vuln_app
+python app.py
+# Open http://127.0.0.1:5001 , 404 is expected
 ```
 
 ---
 
 ## Example Output
 
-After scanning `vuln_app/`, WATCHDOG produces:
+After scanning `vuln_app/` with LLM enrichment enabled, you will see:
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│ 🔴 CRITICAL — computil  sim=0.65  trust=0.00  → remove      │
-│ 🟠 HIGH     — vuln_app  (SQLi, IDOR, hardcodedsecret)       │
-│                                                             │
-│ Patch s: 4 generated, 3 approved first pass, 1 correctd     │
-│ Correction cycle: IDOR patch missing login_required         │
-│ After correction: all 4 patchesapproved                     │
-└─────────────────────────────────────────────────────────────┘
+[threat_correlator]   computil: CRITICAL  sim=0.254  deeper=False
+[patch_writer]        IDOR — Pass 1: ownership check added, @login_required OMITTED
+[reviewer]            ✗ REJECTED: IDOR patch is INCOMPLETE: @login_required missing
+[router]              ↩ Routing to patch_writer (cycle 1/2)
+[patch_writer]        IDOR — applying corrected patch
+[reviewer]            ✅ APPROVED: IDOR
+[reporter]            Report saved: reports/20260314_120000/watchdog_report.html
 ```
 
-The full HTML report is saved to `watchdog_report.html` and `reports/<timestamp>/watchdog_report.html`.
+The final HTML report (dark theme) contains:
+- Executive summary with risk badges
+- Tabbed view: Summary, Findings, Patches, Raw Data
+- Collapsible finding cards with code snippets, trust score bars, capability flags
+- Patch diffs with rejection reasons and correction mandates
+- A purple‑highlighted **CORRECTED** badge for patches that went through the self‑correction loop
+
+![Project Screenshot](reports/screenshot.png)
 
 ---
 
@@ -380,24 +358,39 @@ Everything runs **fully offline** — no cloud API calls required (LLM via Ollam
 
 ---
 
-## Acknowledgments
+## Innovation & Impact
 
-- **Bandit** — Python security static analysis (PyCQA)
-- **LangGraph** — Multi-agent state machine framework (LangChain AI)
-- **ChromaDB** — Embedded vector database
-- **Ollama** — Local LLM inference
-- **Sentence Transformers** — Embedding models (Hugging Face)
-- **XZ Utils 2024** — Real-world attack that inspired this project ([CVE-2024-3094](https://nvd.nist.gov/vuln/detail/CVE-2024-3094))
-- **IIT Bombay Hack & Break** — Agentic AI × Cybersecurity track
+1. **Zero‑day detection** – No existing tool can detect supply chain attacks at the moment a malicious package version is uploaded. WATCHDOG’s behavioural fingerprinting and similarity search fill this critical gap.
+2. **Adversarial self‑correction** – The Reviewer Agent actively tries to break its own patches, then forces the Patch Writer to improve. This mimics a human code review and is a genuine demonstration of multi‑agent intelligence.
+3. **Trust analysis** – Combining code capabilities with maintainer provenance (account age, commit history, anomalies) yields a far richer threat assessment than any existing scanner.
+4. **Offline‑first, open‑source** – Privacy‑conscious enterprises can deploy WATCHDOG without sending their dependency graph to any third party.
+5. **Beautiful, insightful report** – The HTML advisory is designed for both C‑level executives and security engineers, with clear visual indicators of risk, trust, and patch status.
+
+### Real‑world relevance
+
+- **XZ Utils 2024** – Caught by accident after 2 years of development. WATCHDOG would have raised a CRITICAL alert the day the malicious version appeared.
+- **PyTorch‑nightly 2022** – A malicious dependency was downloaded 2,500+ times before discovery. WATCHDOG’s trust analysis (new maintainer, suspicious commit) would have flagged it immediately.
+- **SolarWinds 2020** – The build system compromise could have been detected by behavioural analysis of the injected code.
+
+**Market size:** Every organisation that uses open‑source software (i.e., every tech company) is a potential user. The software supply chain security market is projected to reach **$10 billion by 2028**.
+
+---
+
+## Team - WATCHDOG Team
+
+- **Keerthi Kumar K J** – ECE, AI, Neuro background; architect and lead developer
+
+Built in **5 days** for the **IIT Bombay Hack & Break** – Agentic AI × Cybersecurity track.
 
 ---
 
 ## License
 
-MIT License — see [LICENSE](LICENSE) for details.
+MIT License – see [LICENSE](LICENSE) for details.
 
 ---
 
 <div align="center">
-<em>Built in 5 days for the IIT Bombay Hack & Break hackathon · Agentic AI × Cybersecurity</em>
+<em>“The last line of defence before malicious code enters your codebase.”</em><br>
+<strong>WATCHDOG</strong> · [GitHub](https://github.com/Inteegrus-Research/watchdog.git)
 </div>

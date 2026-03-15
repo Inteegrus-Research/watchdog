@@ -28,6 +28,11 @@ if PROJECT_ROOT not in sys.path:
 import chromadb
 from chromadb.utils import embedding_functions
 
+import logging
+from transformers import logging as transformers_logging
+
+transformers_logging.set_verbosity_error()
+
 # ── Paths ─────────────────────────────────────────────────────────────────────
 CHROMA_DB_PATH = os.path.join(PROJECT_ROOT, "chroma_db")
 ATTACK_PATTERNS_DIR = os.path.join(os.path.dirname(__file__), "attack_patterns")

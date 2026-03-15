@@ -27,6 +27,12 @@ import traceback
 from contextlib import redirect_stdout
 from datetime import datetime
 
+import logging
+from transformers import logging as transformers_logging
+
+transformers_logging.set_verbosity_error()
+
+
 _WEBUI_DIR    = os.path.dirname(os.path.abspath(__file__))
 _PROJECT_ROOT = os.path.abspath(os.path.join(_WEBUI_DIR, ".."))
 if _PROJECT_ROOT not in sys.path:

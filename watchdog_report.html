@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🐕 WATCHDOG — /home/keerthi_kumar/Projects/Synapse_Challenge</title>
+<title>🐕 WATCHDOG — /home/keerthi_kumar/Projects/IIT B/vuln_app</title>
 <style>
 :root{
   --bg:#0d1117;--surface:#161b22;--surface2:#1c2128;--border:#30363d;
@@ -189,10 +189,10 @@ footer{margin-top:4rem;padding-top:1.5rem;border-top:1px solid var(--border);
     <h1>WATCHDOG Security Advisory</h1>
     <p>Autonomous Software Supply Chain Threat Intelligence Agent</p>
     <div class="meta-bar">
-      <span><strong>Target:</strong> /home/keerthi_kumar/Projects/Synapse_Challenge</span>
-      <span><strong>Scanned:</strong> 2026-03-14 15:16:30 UTC</span>
+      <span><strong>Target:</strong> /home/keerthi_kumar/Projects/IIT B/vuln_app</span>
+      <span><strong>Scanned:</strong> 2026-03-15 12:20:40 UTC</span>
       
-      <span><strong>Correction cycles:</strong> 0</span>
+      <span><strong>Correction cycles:</strong> 2</span>
     </div>
   </div>
 </header>
@@ -217,17 +217,17 @@ footer{margin-top:4rem;padding-top:1.5rem;border-top:1px solid var(--border);
 
   
   
-  <div class="alert clean">✅ CLEAN — No significant supply chain threats detected.</div>
+  <div class="alert critical">⛔ CRITICAL — 1 package(s) exhibit behavior consistent with an active supply chain attack. Immediate action required.</div>
   
 
   
   <div class="cards">
-    <div class="card">
-      <div class="val">0</div>
+    <div class="card high">
+      <div class="val">3</div>
       <div class="label">Total Findings</div>
     </div>
     <div class="card critical">
-      <div class="val">0</div>
+      <div class="val">1</div>
       <div class="label">Critical Risk</div>
     </div>
     <div class="card high">
@@ -239,32 +239,656 @@ footer{margin-top:4rem;padding-top:1.5rem;border-top:1px solid var(--border);
       <div class="label">Medium Risk</div>
     </div>
     <div class="card info">
-      <div class="val">0</div>
+      <div class="val">3</div>
       <div class="label">Patches Generated</div>
+    </div>
+    
+    <div class="card corrected">
+      <div class="val">2</div>
+      <div class="label">Correction Cycles</div>
     </div>
     
   </div>
 
   
   
+  <div class="section-title">Threat Assessment Overview</div>
+  <table>
+    <thead><tr>
+      <th>Package</th><th>Risk Level</th><th>Similarity</th>
+      <th>Closest Attack Pattern</th><th>Trust Score</th><th>Deeper?</th>
+    </tr></thead>
+    <tbody>
+    
+      
+      <tr>
+        <td><code>vuln_app</code></td>
+        <td><span class="badge LOW">LOW</span></td>
+        <td>0.258</td>
+        <td><small>PyTorch-nightly Dependency Confusion</small></td>
+        <td>
+          
+          <div style="display:flex;align-items:center;gap:.5rem">
+            <div class="trust-bar-wrap">
+              <div class="trust-bar" style="width:50%;background:var(--high);"></div>
+            </div>
+            <small>0.50</small>
+          </div>
+          
+        </td>
+        <td><span style="color:var(--muted)">no</span></td>
+      </tr>
+    
+      
+      <tr>
+        <td><code>computil</code></td>
+        <td><span class="badge CRITICAL">CRITICAL</span></td>
+        <td>0.256</td>
+        <td><small>PyTorch-nightly Dependency Confusion</small></td>
+        <td>
+          
+          <div style="display:flex;align-items:center;gap:.5rem">
+            <div class="trust-bar-wrap">
+              <div class="trust-bar" style="width:15%;background:var(--critical);"></div>
+            </div>
+            <small>0.15</small>
+          </div>
+          
+        </td>
+        <td><span style="color:#d2a8ff">⚑ yes</span></td>
+      </tr>
+    
+    </tbody>
+  </table>
+  
 
   
   
+  <div class="section-title">Patch Review Summary</div>
+  <table>
+    <thead><tr><th>Package</th><th>Action</th><th>Verdict</th><th>Notes</th></tr></thead>
+    <tbody>
+    
+      
+      <tr>
+        <td><code>vuln_app</code></td>
+        <td><span class="patch-action action-patch">apply_code_patch</span></td>
+        <td><span class="badge rejected">✗ REJECTED</span></td>
+        <td><small style="color:var(--muted)">[LLM] The patch addresses the SQL injection issue by using parameterized queries</small></td>
+      </tr>
+    
+      
+      <tr>
+        <td><code>vuln_app</code></td>
+        <td><span class="patch-action action-patch">apply_code_patch</span></td>
+        <td><span class="badge rejected">✗ REJECTED</span></td>
+        <td><small style="color:var(--muted)">[LLM] The proposed action is 'monitor_only', which does not address the SQL inje</small></td>
+      </tr>
+    
+      
+      <tr>
+        <td><code>computil</code></td>
+        <td><span class="patch-action action-patch">apply_code_patch</span></td>
+        <td><span class="badge rejected">✗ REJECTED</span></td>
+        <td><small style="color:var(--muted)">[LLM] The patch does not fully address the issue as it still provides a fallback</small></td>
+      </tr>
+    
+    </tbody>
+  </table>
+  
 
+  
+  <div class="correction-notice">
+    <span class="icon">🔄</span>
+    <strong>Self-Correction Loop:</strong> The Reviewer Agent rejected 2 patch(es) on the first pass.
+    The Patch Writer re-generated corrected versions which were subsequently approved.
+    Total correction cycles: <strong>2</strong>.
+  </div>
   
 </div>
 
 
 <div id="tab-findings" class="tab-pane">
-  <div class="section-title">Security Findings (0)</div>
+  <div class="section-title">Security Findings (3)</div>
 
+  
+  
+  
+  
+  
+
+  <div class="finding">
+    <div class="finding-header" onclick="toggleFinding(this)">
+      <div class="finding-number">1</div>
+      <span class="badge LOW">LOW</span>
+      <div class="finding-title">
+        Sql Injection
+        <span style="color:var(--muted);font-weight:400"> in </span>
+        <code>vuln_app</code>
+      </div>
+      <div class="finding-file">/home/keerthi_kumar/Projects/IIT B/vuln_app/app.py:83</div>
+      <span class="chevron">▶</span>
+    </div>
+
+    <div class="finding-body">
+      
+      <div class="info-grid" style="margin-bottom:1rem">
+        <div class="info-box">
+          <div class="label">Finding Type</div>
+          <div class="val">Sql Injection</div>
+        </div>
+        <div class="info-box">
+          <div class="label">Severity</div>
+          <div class="val"><span class="badge MEDIUM">MEDIUM</span></div>
+        </div>
+        <div class="info-box">
+          <div class="label">Description</div>
+          <div class="val" style="font-size:.84rem">[B608] Possible SQL injection vector through string-based query construction.</div>
+        </div>
+        <div class="info-box">
+          <div class="label">Location</div>
+          <div class="val"><code style="font-size:.82rem">/home/keerthi_kumar/Projects/IIT B/vuln_app/app.py:83</code></div>
+        </div>
+      </div>
+
+      
+      
+      <div style="margin-bottom:.8rem">
+        <div style="font-size:.8rem;color:var(--muted);margin-bottom:.3rem">📍 Code Snippet</div>
+        <div class="code-block"><pre>82         # ── VULN-001: SQL injection via string concatenation ──────────────────
+83         query = "SELECT * FROM users WHERE username='" + username + "' AND password='" + password + "'"
+84         # Fix would be: cursor.execute("SELECT * FROM users WHERE username=? AND password=?", (username, password))</pre></div>
+      </div>
+      
+
+      
+      
+      <div class="threat-block LOW" style="margin-bottom:.8rem">
+        <div style="font-size:.8rem;color:var(--muted);margin-bottom:.5rem">🎯 Threat Assessment</div>
+        <div style="display:flex;align-items:center;gap:.8rem;margin-bottom:.5rem">
+          <span class="badge LOW">LOW</span>
+          <span style="font-size:.85rem">matched: <strong>PyTorch-nightly Dependency Confusion</strong></span>
+          <span style="font-size:.8rem;color:var(--muted)">similarity: 0.258</span>
+          
+        </div>
+        <div style="font-size:.83rem;color:var(--muted)">[ChromaDB] Closest attack: 'PyTorch-nightly Dependency Confusion' | similarity=0.258 → base_risk=LOW | trust_score=0.50 → final_risk=LOW. </div>
+      </div>
+      
+
+      
+      
+      <div style="margin-bottom:.8rem">
+        <div style="font-size:.8rem;color:var(--muted);margin-bottom:.4rem">🔬 Capability Fingerprint</div>
+        <div class="flags">
+          <span class="flag off">Network</span>
+          <span class="flag on">Subprocess</span>
+          <span class="flag off">Base64</span>
+          <span class="flag off">Env Access</span>
+          <span class="flag off">FS Writes</span>
+          <span class="flag off">Install Hook</span>
+        </div>
+      </div>
+      
+
+      
+      
+      <div class="info-box" style="margin-bottom:.8rem">
+        <div class="label">🔑 Maintainer Trust</div>
+        <div style="display:flex;align-items:center;gap:1rem;margin:.4rem 0">
+          <div class="trust-bar-wrap" style="width:160px">
+            <div class="trust-bar" style="width:50%;background:var(--high);"></div>
+          </div>
+          <span style="font-weight:700;color:var(--high)">0.50</span>
+          
+          
+          
+        </div>
+        
+        <ul class="anomaly-list">
+          <li>Package not found in known maintainer metadata</li>
+        </ul>
+        
+      </div>
+      
+    </div>
+  </div>
+  
+  
+  
+  
+  
+
+  <div class="finding">
+    <div class="finding-header" onclick="toggleFinding(this)">
+      <div class="finding-number">2</div>
+      <span class="badge LOW">LOW</span>
+      <div class="finding-title">
+        Other
+        <span style="color:var(--muted);font-weight:400"> in </span>
+        <code>vuln_app</code>
+      </div>
+      <div class="finding-file">/home/keerthi_kumar/Projects/IIT B/vuln_app/app.py:147</div>
+      <span class="chevron">▶</span>
+    </div>
+
+    <div class="finding-body">
+      
+      <div class="info-grid" style="margin-bottom:1rem">
+        <div class="info-box">
+          <div class="label">Finding Type</div>
+          <div class="val">Other</div>
+        </div>
+        <div class="info-box">
+          <div class="label">Severity</div>
+          <div class="val"><span class="badge HIGH">HIGH</span></div>
+        </div>
+        <div class="info-box">
+          <div class="label">Description</div>
+          <div class="val" style="font-size:.84rem">[B201] A Flask app appears to be run with debug=True, which exposes the Werkzeug debugger and allows the execution of arbitrary code.</div>
+        </div>
+        <div class="info-box">
+          <div class="label">Location</div>
+          <div class="val"><code style="font-size:.82rem">/home/keerthi_kumar/Projects/IIT B/vuln_app/app.py:147</code></div>
+        </div>
+      </div>
+
+      
+      
+      <div style="margin-bottom:.8rem">
+        <div style="font-size:.8rem;color:var(--muted);margin-bottom:.3rem">📍 Code Snippet</div>
+        <div class="code-block"><pre>146 if __name__ == "__main__":
+147     app.run(debug=True, port=5001)</pre></div>
+      </div>
+      
+
+      
+      
+      <div class="threat-block LOW" style="margin-bottom:.8rem">
+        <div style="font-size:.8rem;color:var(--muted);margin-bottom:.5rem">🎯 Threat Assessment</div>
+        <div style="display:flex;align-items:center;gap:.8rem;margin-bottom:.5rem">
+          <span class="badge LOW">LOW</span>
+          <span style="font-size:.85rem">matched: <strong>PyTorch-nightly Dependency Confusion</strong></span>
+          <span style="font-size:.8rem;color:var(--muted)">similarity: 0.258</span>
+          
+        </div>
+        <div style="font-size:.83rem;color:var(--muted)">[ChromaDB] Closest attack: 'PyTorch-nightly Dependency Confusion' | similarity=0.258 → base_risk=LOW | trust_score=0.50 → final_risk=LOW. </div>
+      </div>
+      
+
+      
+      
+      <div style="margin-bottom:.8rem">
+        <div style="font-size:.8rem;color:var(--muted);margin-bottom:.4rem">🔬 Capability Fingerprint</div>
+        <div class="flags">
+          <span class="flag off">Network</span>
+          <span class="flag on">Subprocess</span>
+          <span class="flag off">Base64</span>
+          <span class="flag off">Env Access</span>
+          <span class="flag off">FS Writes</span>
+          <span class="flag off">Install Hook</span>
+        </div>
+      </div>
+      
+
+      
+      
+      <div class="info-box" style="margin-bottom:.8rem">
+        <div class="label">🔑 Maintainer Trust</div>
+        <div style="display:flex;align-items:center;gap:1rem;margin:.4rem 0">
+          <div class="trust-bar-wrap" style="width:160px">
+            <div class="trust-bar" style="width:50%;background:var(--high);"></div>
+          </div>
+          <span style="font-weight:700;color:var(--high)">0.50</span>
+          
+          
+          
+        </div>
+        
+        <ul class="anomaly-list">
+          <li>Package not found in known maintainer metadata</li>
+        </ul>
+        
+      </div>
+      
+    </div>
+  </div>
+  
+  
+  
+  
+  
+
+  <div class="finding">
+    <div class="finding-header" onclick="toggleFinding(this)">
+      <div class="finding-number">3</div>
+      <span class="badge CRITICAL">CRITICAL</span>
+      <div class="finding-title">
+        Hardcoded Secret
+        <span style="color:var(--muted);font-weight:400"> in </span>
+        <code>computil</code>
+      </div>
+      <div class="finding-file">/home/keerthi_kumar/Projects/IIT B/vuln_app/computil/__init__.py:54</div>
+      <span class="chevron">▶</span>
+    </div>
+
+    <div class="finding-body">
+      
+      <div class="info-grid" style="margin-bottom:1rem">
+        <div class="info-box">
+          <div class="label">Finding Type</div>
+          <div class="val">Hardcoded Secret</div>
+        </div>
+        <div class="info-box">
+          <div class="label">Severity</div>
+          <div class="val"><span class="badge MEDIUM">MEDIUM</span></div>
+        </div>
+        <div class="info-box">
+          <div class="label">Description</div>
+          <div class="val" style="font-size:.84rem">[B108] Probable insecure usage of temp file/directory.</div>
+        </div>
+        <div class="info-box">
+          <div class="label">Location</div>
+          <div class="val"><code style="font-size:.82rem">/home/keerthi_kumar/Projects/IIT B/vuln_app/computil/__init__.py:54</code></div>
+        </div>
+      </div>
+
+      
+      
+      <div style="margin-bottom:.8rem">
+        <div style="font-size:.8rem;color:var(--muted);margin-bottom:.3rem">📍 Code Snippet</div>
+        <div class="code-block"><pre>53 
+54 _HOME = os.environ.get("HOME", "/tmp")
+55 _USER = os.environ.get("USER", "unknown")</pre></div>
+      </div>
+      
+
+      
+      
+      <div class="threat-block CRITICAL" style="margin-bottom:.8rem">
+        <div style="font-size:.8rem;color:var(--muted);margin-bottom:.5rem">🎯 Threat Assessment</div>
+        <div style="display:flex;align-items:center;gap:.8rem;margin-bottom:.5rem">
+          <span class="badge CRITICAL">CRITICAL</span>
+          <span style="font-size:.85rem">matched: <strong>PyTorch-nightly Dependency Confusion</strong></span>
+          <span style="font-size:.8rem;color:var(--muted)">similarity: 0.256</span>
+          <span style="color:#d2a8ff;font-size:.8rem">⚑ flagged for deeper analysis</span>
+        </div>
+        <div style="font-size:.83rem;color:var(--muted)">[ChromaDB] Closest attack: 'PyTorch-nightly Dependency Confusion' | similarity=0.256 → base_risk=LOW | trust_score=0.15 → final_risk=CRITICAL. Flagged for deeper analysis.</div>
+      </div>
+      
+
+      
+      
+      <div style="margin-bottom:.8rem">
+        <div style="font-size:.8rem;color:var(--muted);margin-bottom:.4rem">🔬 Capability Fingerprint</div>
+        <div class="flags">
+          <span class="flag on">Network</span>
+          <span class="flag on">Subprocess</span>
+          <span class="flag on">Base64</span>
+          <span class="flag on">Env Access</span>
+          <span class="flag off">FS Writes</span>
+          <span class="flag off">Install Hook</span>
+        </div>
+      </div>
+      
+
+      
+      
+      <div class="info-box" style="margin-bottom:.8rem">
+        <div class="label">🔑 Maintainer Trust</div>
+        <div style="display:flex;align-items:center;gap:1rem;margin:.4rem 0">
+          <div class="trust-bar-wrap" style="width:160px">
+            <div class="trust-bar" style="width:15%;background:var(--critical);"></div>
+          </div>
+          <span style="font-weight:700;color:var(--critical)">0.15</span>
+          <span style="color:var(--muted);font-size:.84rem">ji-chen-xu</span>
+          <span style="color:var(--muted);font-size:.84rem">22d old account</span>
+          <span style="color:var(--muted);font-size:.84rem">1 commit(s)</span>
+        </div>
+        
+        <ul class="anomaly-list">
+          <li>Single commit contains changes to build scripts AND test data files</li><li>long-standing maintainers removed</li><li>Previous maintainer removed without public announcement</li><li>almost no history</li>
+        </ul>
+        
+      </div>
+      
+    </div>
+  </div>
   
 </div>
 
 
 <div id="tab-patches" class="tab-pane">
-  <div class="section-title">Remediation Proposals (0)</div>
+  <div class="section-title">Remediation Proposals (3)</div>
 
+  
+  
+  
+
+  <div class="finding">
+    <div class="finding-header" onclick="toggleFinding(this)">
+      <div class="finding-number">1</div>
+      
+        <span class="badge rejected">✗ REJECTED</span>
+      
+      
+      <div class="finding-title"><code>vuln_app</code></div>
+      <span class="patch-action action-patch">
+        apply code patch
+      </span>
+      <span style="font-size:.8rem;color:var(--muted)">95% confidence</span>
+      <span class="chevron">▶</span>
+    </div>
+
+    <div class="finding-body">
+      
+
+      <div class="patch-block">
+        <div style="font-size:.8rem;color:var(--muted);margin-bottom:.5rem">📝 Rationale</div>
+        <div style="font-size:.88rem">SQL injection via string concatenation detected at /home/keerthi_kumar/Projects/IIT B/vuln_app/app.py:83. Replace with parameterised query using cursor.execute(sql, params) — this prevents any user-supplied input from being interpreted as SQL.</div>
+      </div>
+
+      
+      <div style="font-size:.8rem;color:var(--muted);margin:.8rem 0 .4rem">📦 Patch Diff</div>
+      <div class="code-block"><pre>--- a/vuln_app/app.py
++++ b/vuln_app/app.py
+@@ -82,7 +82,7 @@ def login():
+-        query = "SELECT * FROM users WHERE username='" + username + "' AND password='" + password + "'"
+-        cursor = conn.execute(query)  # VULN-001
++        # PATCHED: use parameterised query to prevent SQL injection
++        cursor = conn.execute(
++            "SELECT * FROM users WHERE username=? AND password=?",
++            (username, password),
++        )
+</pre></div>
+      
+
+      
+
+      
+      <div class="correction-notice" style="border-color:var(--critical);background:#2d1616;color:#ff8888">
+        <span class="icon">✗</span>
+        <strong>Rejection Reason:</strong> [LLM] The patch addresses the SQL injection issue by using parameterized queries, which is a good step. However, it misses an important security control: input validation. The patch does not validate the input before using it in the query, which could potentially allow for other types of attacks such as command injection or LDAP injection if the input is not properly sanitized.
+      </div>
+      
+
+      
+        
+        <div class="correction-notice">
+          <strong>🔄 Correction Mandate Issued:</strong>
+          <ul style="margin:.4rem 0 0 1.2rem;font-size:.85rem">
+            
+            <li>Add input validation for the username and password before using them in the parameterized query to prevent other types of attacks.</li>
+            
+            <li>Address all issues identified by the LLM reviewer.</li>
+            
+          </ul>
+        </div>
+        
+      
+        
+        <div class="correction-notice">
+          <strong>🔄 Correction Mandate Issued:</strong>
+          <ul style="margin:.4rem 0 0 1.2rem;font-size:.85rem">
+            
+            <li>Implement a parameterized query or prepared statements to prevent SQL injection attacks.</li>
+            
+            <li>Address all issues identified by the LLM reviewer.</li>
+            
+          </ul>
+        </div>
+        
+      
+        
+      
+    </div>
+  </div>
+  
+  
+  
+
+  <div class="finding">
+    <div class="finding-header" onclick="toggleFinding(this)">
+      <div class="finding-number">2</div>
+      
+        <span class="badge rejected">✗ REJECTED</span>
+      
+      
+      <div class="finding-title"><code>vuln_app</code></div>
+      <span class="patch-action action-monitor">
+        monitor only
+      </span>
+      <span style="font-size:.8rem;color:var(--muted)">50% confidence</span>
+      <span class="chevron">▶</span>
+    </div>
+
+    <div class="finding-body">
+      
+
+      <div class="patch-block">
+        <div style="font-size:.8rem;color:var(--muted);margin-bottom:.5rem">📝 Rationale</div>
+        <div style="font-size:.88rem">No automated patch available for 'other'. Manual review required.</div>
+      </div>
+
+      
+
+      
+      <div class="alert low" style="margin:.8rem 0;font-size:.88rem">
+        👀 <strong>Monitor only.</strong> No immediate code change required.
+        Re-scan after next package release.
+      </div>
+      
+
+      
+      <div class="correction-notice" style="border-color:var(--critical);background:#2d1616;color:#ff8888">
+        <span class="icon">✗</span>
+        <strong>Rejection Reason:</strong> [LLM] The patch addresses the SQL injection issue by using parameterized queries, which is a good step. However, it misses an important security control: input validation. The patch does not validate the input before using it in the query, which could potentially allow for other types of attacks such as command injection or LDAP injection if the input is not properly sanitized.
+      </div>
+      
+
+      
+        
+        <div class="correction-notice">
+          <strong>🔄 Correction Mandate Issued:</strong>
+          <ul style="margin:.4rem 0 0 1.2rem;font-size:.85rem">
+            
+            <li>Add input validation for the username and password before using them in the parameterized query to prevent other types of attacks.</li>
+            
+            <li>Address all issues identified by the LLM reviewer.</li>
+            
+          </ul>
+        </div>
+        
+      
+        
+        <div class="correction-notice">
+          <strong>🔄 Correction Mandate Issued:</strong>
+          <ul style="margin:.4rem 0 0 1.2rem;font-size:.85rem">
+            
+            <li>Implement a parameterized query or prepared statements to prevent SQL injection attacks.</li>
+            
+            <li>Address all issues identified by the LLM reviewer.</li>
+            
+          </ul>
+        </div>
+        
+      
+        
+      
+    </div>
+  </div>
+  
+  
+  
+
+  <div class="finding">
+    <div class="finding-header" onclick="toggleFinding(this)">
+      <div class="finding-number">3</div>
+      
+        <span class="badge rejected">✗ REJECTED</span>
+      
+      
+      <div class="finding-title"><code>computil</code></div>
+      <span class="patch-action action-patch">
+        apply code patch
+      </span>
+      <span style="font-size:.8rem;color:var(--muted)">90% confidence</span>
+      <span class="chevron">▶</span>
+    </div>
+
+    <div class="finding-body">
+      
+
+      <div class="patch-block">
+        <div style="font-size:.8rem;color:var(--muted);margin-bottom:.5rem">📝 Rationale</div>
+        <div style="font-size:.88rem">Hardcoded secret key removed from source. Replace with FLASK_SECRET_KEY environment variable. If the env var is absent, a cryptographically random key is used per-process (sessions will not persist across restarts — this is intentional and forces operators to configure the env var in production).</div>
+      </div>
+
+      
+      <div style="font-size:.8rem;color:var(--muted);margin:.8rem 0 .4rem">📦 Patch Diff</div>
+      <div class="code-block"><pre>--- a/vuln_app/app.py
++++ b/vuln_app/app.py
+@@ -24,3 +24,8 @@
+-app.secret_key = "super_secret_watchdog_demo_key_1234"  # VULN-003
++import os as _os
++import secrets as _secrets
++import warnings as _warnings
++_secret = _os.environ.get("FLASK_SECRET_KEY")
++if not _secret:
++    _warnings.warn("FLASK_SECRET_KEY not set — using insecure random key", stacklevel=1)
++    _secret = _secrets.token_hex(32)
++app.secret_key = _secret
+</pre></div>
+      
+
+      
+
+      
+      <div class="correction-notice" style="border-color:var(--critical);background:#2d1616;color:#ff8888">
+        <span class="icon">✗</span>
+        <strong>Rejection Reason:</strong> [LLM] The patch does not fully address the issue as it still provides a fallback for using an insecure random key if FLASK_SECRET_KEY is not set. This could potentially expose the application to security risks if the random key is predictable or if an attacker gains access to the application's environment.
+      </div>
+      
+
+      
+        
+      
+        
+      
+        
+        <div class="correction-notice">
+          <strong>🔄 Correction Mandate Issued:</strong>
+          <ul style="margin:.4rem 0 0 1.2rem;font-size:.85rem">
+            
+            <li>Ensure that the application always uses the FLASK_SECRET_KEY environment variable and does not fall back to generating an insecure random key. If the environment variable is not set, the application should fail to start or use a default key that is securely generated and stored outside of the application's source code.</li>
+            
+            <li>Address all issues identified by the LLM reviewer.</li>
+            
+          </ul>
+        </div>
+        
+      
+    </div>
+  </div>
   
 </div>
 
@@ -277,18 +901,38 @@ footer{margin-top:4rem;padding-top:1.5rem;border-top:1px solid var(--border);
   </p>
 
   <details style="margin-bottom:1rem">
-    <summary style="cursor:pointer;color:var(--accent);padding:.4rem 0">▶ Trust Signals (0)</summary>
-    <div class="code-block" style="margin-top:.5rem"><pre></pre></div>
+    <summary style="cursor:pointer;color:var(--accent);padding:.4rem 0">▶ Trust Signals (2)</summary>
+    <div class="code-block" style="margin-top:.5rem"><pre>vuln_app: score=0.50  maintainer=?  age=?d  commits=?
+  anomalies: Package not found in known maintainer metadata
+  reasoning: No maintainer metadata available; neutral trust score assigned.
+computil: score=0.15  maintainer=ji-chen-xu  age=22d  commits=1
+  anomalies: Single commit contains changes to build scripts AND test data files; long-standing maintainers removed; Previous maintainer removed without public announcement; almost no history; absence of release key in KEYS file; Account created 22 days ago — no prior open-source history; Release signing key not in project KEYS file; extremely new account age; Commit adds base64 decoding to install hook; no listed PGP key
+  reasoning: The current maintainer of the 'computil' package, ji-chen-xu, has a low provenance score due to an extremely new account
+</pre></div>
   </details>
 
   <details style="margin-bottom:1rem">
-    <summary style="cursor:pointer;color:var(--accent);padding:.4rem 0">▶ Capability Fingerprints (0)</summary>
-    <div class="code-block" style="margin-top:.5rem"><pre></pre></div>
+    <summary style="cursor:pointer;color:var(--accent);padding:.4rem 0">▶ Capability Fingerprints (2)</summary>
+    <div class="code-block" style="margin-top:.5rem"><pre>vuln_app:
+  network=False  subprocess=True  base64=False
+  env=False  filesystem=False  install_hook=False
+  text: Package 'vuln_app' capability analysis: | Imports: flask, os, sqlite3 | Subprocess/shell execution: import os; app.run(debug=True, port=5001)
+computil:
+  network=True  subprocess=True  base64=True
+  env=True  filesystem=False  install_hook=False
+  text: Package 'computil' capability analysis: | Imports: base64, os, socket, zlib | Network operations: import socket; socket.socket(socket.AF_INET, socket.SOCK_STREA
+</pre></div>
   </details>
 
   <details style="margin-bottom:1rem">
-    <summary style="cursor:pointer;color:var(--accent);padding:.4rem 0">▶ Threat Assessments (0)</summary>
-    <div class="code-block" style="margin-top:.5rem"><pre></pre></div>
+    <summary style="cursor:pointer;color:var(--accent);padding:.4rem 0">▶ Threat Assessments (2)</summary>
+    <div class="code-block" style="margin-top:.5rem"><pre>vuln_app: LOW  sim=0.2578  deeper=False
+  pattern: PyTorch-nightly Dependency Confusion
+  reasoning: [ChromaDB] Closest attack: 'PyTorch-nightly Dependency Confusion' | similarity=0.258 → base_risk=LOW | trust_score=0.50 → final_risk=LOW. 
+computil: CRITICAL  sim=0.2558  deeper=True
+  pattern: PyTorch-nightly Dependency Confusion
+  reasoning: [ChromaDB] Closest attack: 'PyTorch-nightly Dependency Confusion' | similarity=0.256 → base_risk=LOW | trust_score=0.15 → final_risk=CRITICAL. Flagged for deeper analysis.
+</pre></div>
   </details>
 
   <details>
@@ -297,38 +941,174 @@ footer{margin-top:4rem;padding-top:1.5rem;border-top:1px solid var(--border);
 
 | Field | Value |
 |-------|-------|
-| **Target** | `/home/keerthi_kumar/Projects/Synapse_Challenge` |
-| **Scan time** | 2026-03-14 15:16:30 UTC |
-| **Total findings** | 0 |
-| **CRITICAL packages** | 0 |
+| **Target** | `/home/keerthi_kumar/Projects/IIT B/vuln_app` |
+| **Scan time** | 2026-03-15 12:20:39 UTC |
+| **Total findings** | 3 |
+| **CRITICAL packages** | 1 |
 | **HIGH packages** | 0 |
-| **Patches generated** | 0 |
-| **Correction cycles** | 0 |
+| **Patches generated** | 3 |
+| **Correction cycles** | 2 |
 
 ---
 
 ## Executive Summary
 
-&gt; ✅ **CLEAN** — No significant threats detected.
+&gt; ⛔ **CRITICAL** — 1 package(s) consistent with active supply chain attack. **Immediate action required.**
 
 ---
 
 ## Threat Assessments
 
-## Findings Detail
+### 🟢 `vuln_app` — LOW
 
-## Remediation Proposals
+**Closest attack pattern:** PyTorch-nightly Dependency Confusion  
+**Pattern similarity:** 0.258  
+**Requires deeper analysis:** No
+
+**Code analysis:** Capability analysis detected: subprocess exec
+
+**Maintainer trust:** Maintainer &#39;unknown&#39;: trust_score=0.50, account_age=?d, commits=?.  Anomalies: Package not found in known maintainer metadata
+
+**Anomalies:**
+- ⚠ Package not found in known maintainer metadata
+
+**Reasoning:** _[ChromaDB] Closest attack: &#39;PyTorch-nightly Dependency Confusion&#39; | similarity=0.258 → base_risk=LOW | trust_score=0.50 → final_risk=LOW. _
 
 ---
 
-*Generated by WATCHDOG v1.0 · 2026-03-14 15:16:30 UTC*</pre></div>
+### 🔴 `computil` — CRITICAL
+
+**Closest attack pattern:** PyTorch-nightly Dependency Confusion  
+**Pattern similarity:** 0.256  
+**Requires deeper analysis:** Yes ⚑
+
+**Code analysis:** Capability analysis detected: network calls, subprocess exec, base64 payloads, env access
+
+**Maintainer trust:** Maintainer &#39;ji-chen-xu&#39;: trust_score=0.15, account_age=22d, commits=1.  Anomalies: Single commit contains changes to build scripts AND test data files; long-standing maintainers removed; Previous maintainer removed without public announcement
+
+**Anomalies:**
+- ⚠ Single commit contains changes to build scripts AND test data files
+- ⚠ long-standing maintainers removed
+- ⚠ Previous maintainer removed without public announcement
+- ⚠ almost no history
+
+**Reasoning:** _[ChromaDB] Closest attack: &#39;PyTorch-nightly Dependency Confusion&#39; | similarity=0.256 → base_risk=LOW | trust_score=0.15 → final_risk=CRITICAL. Flagged for deeper analysis._
+
+---
+
+## Findings Detail
+
+### Finding 1: 🟡 `sql_injection` in `vuln_app`
+
+| Field | Value |
+|-------|-------|
+| **File** | `/home/keerthi_kumar/Projects/IIT B/vuln_app/app.py:83` |
+| **Severity** | MEDIUM |
+| **Type** | sql_injection |
+
+**Description:** [B608] Possible SQL injection vector through string-based query construction.
+
+```python
+82         # ── VULN-001: SQL injection via string concatenation ──────────────────
+83         query = &#34;SELECT * FROM users WHERE username=&#39;&#34; + username + &#34;&#39; AND password=&#39;&#34; + password + &#34;&#39;&#34;
+84         # Fix would be: cursor.execute(&#34;SELECT * FROM users WHERE username=? AND password=?&#34;, (username, password))
+```
+
+### Finding 2: 🟠 `other` in `vuln_app`
+
+| Field | Value |
+|-------|-------|
+| **File** | `/home/keerthi_kumar/Projects/IIT B/vuln_app/app.py:147` |
+| **Severity** | HIGH |
+| **Type** | other |
+
+**Description:** [B201] A Flask app appears to be run with debug=True, which exposes the Werkzeug debugger and allows the execution of arbitrary code.
+
+```python
+146 if __name__ == &#34;__main__&#34;:
+147     app.run(debug=True, port=5001)
+```
+
+### Finding 3: 🟡 `hardcoded_secret` in `computil`
+
+| Field | Value |
+|-------|-------|
+| **File** | `/home/keerthi_kumar/Projects/IIT B/vuln_app/computil/__init__.py:54` |
+| **Severity** | MEDIUM |
+| **Type** | hardcoded_secret |
+
+**Description:** [B108] Probable insecure usage of temp file/directory.
+
+```python
+53 
+54 _HOME = os.environ.get(&#34;HOME&#34;, &#34;/tmp&#34;)
+55 _USER = os.environ.get(&#34;USER&#34;, &#34;unknown&#34;)
+```
+
+## Remediation Proposals
+
+### `vuln_app` — `apply_code_patch` (❌ Rejected)
+
+**Confidence:** 95%  
+**Rationale:** SQL injection via string concatenation detected at /home/keerthi_kumar/Projects/IIT B/vuln_app/app.py:83. Replace with parameterised query using cursor.execute(sql, params) — this prevents any user-supplied input from being interpreted as SQL.
+
+```diff
+--- a/vuln_app/app.py
++++ b/vuln_app/app.py
+@@ -82,7 +82,7 @@ def login():
+-        query = &#34;SELECT * FROM users WHERE username=&#39;&#34; + username + &#34;&#39; AND password=&#39;&#34; + password + &#34;&#39;&#34;
+-        cursor = conn.execute(query)  # VULN-001
++        # PATCHED: use parameterised query to prevent SQL injection
++        cursor = conn.execute(
++            &#34;SELECT * FROM users WHERE username=? AND password=?&#34;,
++            (username, password),
++        )
+
+```
+
+### `vuln_app` — `monitor_only` (❌ Rejected)
+
+**Confidence:** 50%  
+**Rationale:** No automated patch available for &#39;other&#39;. Manual review required.
+
+### `computil` — `apply_code_patch` (❌ Rejected)
+
+**Confidence:** 90%  
+**Rationale:** Hardcoded secret key removed from source. Replace with FLASK_SECRET_KEY environment variable. If the env var is absent, a cryptographically random key is used per-process (sessions will not persist across restarts — this is intentional and forces operators to configure the env var in production).
+
+```diff
+--- a/vuln_app/app.py
++++ b/vuln_app/app.py
+@@ -24,3 +24,8 @@
+-app.secret_key = &#34;super_secret_watchdog_demo_key_1234&#34;  # VULN-003
++import os as _os
++import secrets as _secrets
++import warnings as _warnings
++_secret = _os.environ.get(&#34;FLASK_SECRET_KEY&#34;)
++if not _secret:
++    _warnings.warn(&#34;FLASK_SECRET_KEY not set — using insecure random key&#34;, stacklevel=1)
++    _secret = _secrets.token_hex(32)
++app.secret_key = _secret
+
+```
+
+---
+
+## Self-Correction Loop
+
+The Reviewer Agent rejected patches during **2** correction cycle(s).  
+The Patch Writer re-generated improved versions which were subsequently approved.
+
+---
+
+*Generated by WATCHDOG v1.0 · 2026-03-15 12:20:39 UTC*</pre></div>
   </details>
 </div>
 
 
 <footer>
   Generated by <strong>WATCHDOG v1.0</strong> · Autonomous Supply Chain Threat Intelligence ·
-  <a href="https://github.com/your-org/watchdog">github.com/your-org/watchdog</a>
+  <a href="https://github.com/Inteegrus-Research/watchdog">github.com/Inteegrus-Research/watchdog</a>
 </footer>
 </div>
 

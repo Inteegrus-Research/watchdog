@@ -29,6 +29,12 @@ import os
 import sys
 import time
 
+import logging
+from transformers import logging as transformers_logging
+
+transformers_logging.set_verbosity_error()
+
+
 _SCRIPTS_DIR = os.path.dirname(os.path.abspath(__file__))
 _PROJECT_ROOT = os.path.abspath(os.path.join(_SCRIPTS_DIR, ".."))
 if _PROJECT_ROOT not in sys.path:
@@ -48,7 +54,7 @@ console = Console()
 # ── CLI ────────────────────────────────────────────────────────────────────────
 
 def parse_args() -> argparse.Namespace:
-    p = argparse.ArgumentParser(description="WATCHDOG Day 3 pipeline test")
+    p = argparse.ArgumentParser(description="WATCHDOG pipeline test")
     p.add_argument("--target",  default="vuln_app/", help="Path to scan")
     p.add_argument("--llm",     action="store_true",  help="Enable Ollama LLM calls")
     p.add_argument("--loop",    action="store_true",  help="Show correction loop details")
@@ -64,7 +70,7 @@ _RISK_EMOJI = {"CRITICAL":"🔴","HIGH":"🟠","MEDIUM":"🟡","LOW":"🟢","NON
 
 def _print_header(target: str, use_llm: bool) -> None:
     console.print(Panel.fit(
-        f"[bold cyan]🐕 WATCHDOG — Day 3 Pipeline Test[/bold cyan]\n"
+        f"[bold cyan]🐕 WATCHDOG — Pipeline Test[/bold cyan]\n"
         f"Target : [yellow]{target}[/yellow]\n"
         f"LLM    : {'[green]enabled (Ollama)[/green]' if use_llm else '[dim]disabled (rule-based)[/dim]'}",
         border_style="cyan",
@@ -338,7 +344,7 @@ def main() -> None:
     else:
         console.print(Panel(
             f"  All validations passed ✓  (correction_count={corr_count})",
-            title="[green]✓ Day 3 Test Passed[/green]",
+            title="[green]✓ Test Passed[/green]",
             border_style="green",
         ))
 
